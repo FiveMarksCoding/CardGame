@@ -11,8 +11,13 @@ config_version=5
 [application]
 
 config/name="CardGame"
+run/main_scene="uid://cctack103hm10"
 config/features=PackedStringArray("4.6", "GL Compatibility")
 config/icon="res://icon.svg"
+
+[autoload]
+
+GameState="*uid://btn4v3v6swnjn"
 
 [physics]
 
