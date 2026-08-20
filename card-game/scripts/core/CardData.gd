@@ -1,4 +1,4 @@
-class_name CardData
+class_name CardData  #这个文件可以理解为一个大 struct
 extends RefCounted
 
 var id: String
