@@ -1,0 +1,8 @@
+[gd_scene format=3 uid="uid://bpejc24nurk5x"]
+
+[ext_resource type="Script" uid="uid://cvp14av6ua1j" path="res://scripts/map/MapScreen.gd" id="1_acxle"]
+
+[node name="MapScreen" type="Control" unique_id=1069675955]
+layout_mode = 3
+anchors_preset = 0
+script = ExtResource("1_acxle")

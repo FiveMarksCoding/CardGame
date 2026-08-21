@@ -25,16 +25,17 @@ func generate_test_map():
 	nodes["start"] = start;
 	#t2
 	var node2 = MapNode.new("node2",NodeType.BATTLE,Vector2(400,400));
+	node2.unlocked=1;
 	nodes["node2"] = node2;
-	nodes["start"].connections.append("node2");
+	nodes["start"].edges.append("node2");
 	#t3
 	var node3 = MapNode.new("node3",NodeType.BATTLE,Vector2(600,400));
 	nodes["node3"] = node3;
-	nodes["node2"].connections.append("node3");
+	nodes["node2"].edges.append("node3");
 	#t4
 	var node4 = MapNode.new("node4",NodeType.BOSS,Vector2(800,400));
 	nodes["node4"] = node4;
-	nodes["node3"].connections.append("node4");
+	nodes["node3"].edges.append("node4");
 	
 func get_node (id: String) -> MapNode:
 	return nodes.get(id, null);
