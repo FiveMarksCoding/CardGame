@@ -22,10 +22,24 @@ func _ready():
 	draw_map();
 
 func draw_map ():
-	for id in map_container.get_children():
-		if id is Button:
-			id.queue_free();
-	
+	for i in map_container.get_children():
+		i.queue_free();
+	for id in map_data.nodes:
+		var node: MapData.MapNode=map_data.nodes[id];
+		for next in node.edges:
+			var next_node=map_data.nodes[next];
+			if next_node==null:
+				continue;
+			var line=Line2D.new();
+			line.add_point(node.position);
+			line.add_point(next_node.position);
+			line.width=2.0;
+			line.default_color=Color.GRAY;
+			if node.completed && next_node.unlocked:
+				line.default_color=Color.GOLD;
+			map_container.add_child(line);
+			
+			
 	for id in map_data.nodes:
 		var node: MapData.MapNode = map_data.nodes[id];
 		# 这个 node 是属于 MapData 类下的一个 MapNode
@@ -70,6 +84,8 @@ func _on_node_clicked (node_id: String):
 		if next_node:
 			next_node.unlocked=1;
 	draw_map();
+	var battle = load("res://scenes/battle/Battle.tscn").instantiate()
+	get_tree().root.add_child(battle)
 func _input (event: InputEvent):
 	if event is InputEventMouseButton && event.button_index == MOUSE_BUTTON_LEFT:
 		if event.pressed:

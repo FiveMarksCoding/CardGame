@@ -1,0 +1,21 @@
+[gd_scene format=3 uid="uid://bapyre67e2rfi"]
+
+[ext_resource type="Script" uid="uid://hpew7rfpeaa2" path="res://scripts/battle/BattleManager.gd" id="1_omw3i"]
+
+[sub_resource type="GDScript" id="GDScript_omw3i"]
+
+[node name="Battle" type="Node2D" unique_id=1794432958]
+script = SubResource("GDScript_omw3i")
+
+[node name="ColorRect" type="ColorRect" parent="." unique_id=616077054]
+anchors_preset = -1
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_right = 1280.0
+offset_bottom = 720.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.101960786, 0.101960786, 0.18039216, 1)
+
+[node name="BattleManager" type="Node" parent="." unique_id=243460449]
+script = ExtResource("1_omw3i")

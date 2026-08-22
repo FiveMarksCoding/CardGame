@@ -1,0 +1,5 @@
+[gd_scene format=3 uid="uid://gij13thf0krm"]
+
+[node name="CardUI" type="Control" unique_id=421471016]
+layout_mode = 3
+anchors_preset = 0
