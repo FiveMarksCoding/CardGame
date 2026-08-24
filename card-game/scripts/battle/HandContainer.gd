@@ -13,6 +13,7 @@ const SCATTER_OFFSET_LEFT=60.0;      # 左撤退距离
 const SCATTER_OFFSET_RIGHT=90.0;     # 右撤退距离
 const MAX_ANGLE_DEG=15.0;   	# 最大倾斜角度（弧度）
 const EXIT_DELAY: float=0.5  # 延迟时间（秒）
+const HAND_MOVE_TIME=0.4  #打出牌后手牌排列速度
 
 var hands: Array[BattleCardUI]=[];
 var base_positions: Array[Vector2]=[];  # 存储每张牌的基准位置
@@ -21,6 +22,8 @@ var exit_timer: float=0.0  # 延迟计时器 计时防抖
 var is_hovering: bool=0;  # 是否在手牌区域内
 var current_y_offset: float=0.0;
 var current_x_offsets: Array[float]=[];  # 每张牌独立的水平偏移
+var t_pos: Array[Vector2]=[];  # 存储计算好的目标位置
+var t_rot: Array[float]=[];      # 方向
 
 func _ready ():
 	mouse_filter=Control.MOUSE_FILTER_IGNORE;
@@ -37,25 +40,23 @@ func _get_battle_manager() -> BattleManager:
 			return p.get_node("BattleManager") as BattleManager;
 		p=p.get_parent();
 	return null;
-func _add_test_cards ():
-	var copydeck=GameState.player_deck;
-	for i in range(min(5,copydeck.size())):
-		var card_data=copydeck[i];
-		var card_ui=BattleCardUI.new();
-		card_ui.setup(card_data);
-		card_ui.hover_entered.connect(_on_card_hover_entered);
-		card_ui.hover_exited.connect(_on_card_hover_exited);
-		card_ui.hand_hover_entered.connect(_on_hand_hover_entered)
-		card_ui.hand_hover_exited.connect(_on_hand_hover_exited)
-		add_child(card_ui);
-		hands.append(card_ui);
-	_arrange_cards();
-#排列卡牌
+func _add_test_cards():
+	# 延迟 0.2 秒后开始抽牌，让玩家看到起始状态
+	await get_tree().create_timer(0.2).timeout
+	for i in range(5):
+		_draw_one_card()
+		await get_tree().create_timer(0.1).timeout  # 每张牌间隔 0.15 秒
+#排列卡牌（只计算）
 func _arrange_cards ():
 	var n=hands.size();
 	if n==0:
+		base_positions.clear();
+		t_pos.clear();
+		t_rot.clear();
 		return;
 	base_positions.clear();
+	t_pos.clear();
+	t_rot.clear();
 	var total_width=n*CARD_WIDTH+(n-1)*MAX_CARD_SPACING;
 	var start_x=(size.x-total_width)/2.0;
 	var y_offset=CARD_y;
@@ -72,11 +73,12 @@ func _arrange_cards ():
 		var y=y_offset-arc_offset;  # arc_offset 为正，所以向上偏移
 		# 旋转角度
 		var rot=t*ROT_MAX;
-		var pos=Vector2(x, y);
-		card.position=pos;
-		card.rotation=rot;
-		card.size=Vector2(CARD_WIDTH,CARD_HEIGHT);
-		base_positions.append(pos);
+		base_positions.append(Vector2(x,y));
+		t_pos.append(Vector2(x, y));
+		t_rot.append(rot);
+	_apply_card_positions();
+func _apply_card_pos():
+	_apply_card_positions(true);
 func _calculate_rotation(index: int, total: int) -> float:
 	if total <= 1:
 		return 0.0
@@ -97,7 +99,7 @@ func _set_all_card_scale (scale_target: float):
 		tween.tween_property(i,"scale",Vector2(scale_target,scale_target),0.15);
 # 单卡选中
 func _on_card_hover_entered(card: BattleCardUI):
-	#print("悬停: ", card.get_card_data().card_name);
+	print("悬停触发")   # ← 加这行
 	card.select_card(); 
 	_spread_cards(card);
 func _on_card_hover_exited(card: BattleCardUI):
@@ -132,22 +134,30 @@ func _reset_card_positions():
 	for i in range(hands.size()):
 		current_x_offsets.append(0.0);
 	_apply_card_positions();
-func _apply_card_positions():
-	# 确保 current_x_offsets 长度与 hands 一致
+func _apply_card_positions(animate: bool = true):
+	# 确保偏移数组长度匹配
 	while current_x_offsets.size() < hands.size():
-		current_x_offsets.append(0.0);
+		current_x_offsets.append(0.0)
 	while current_x_offsets.size() > hands.size():
-		current_x_offsets.pop_back();
+		current_x_offsets.pop_back()
 	
 	for i in range(hands.size()):
-		var card=hands[i];
-		var base_pos=base_positions[i]
-		var x_offset=current_x_offsets[i] if i<current_x_offsets.size() else 0.0;
-		var target_pos=Vector2(base_pos.x+x_offset,base_pos.y+current_y_offset);
-		var tween=create_tween();
-		tween.set_ease(Tween.EASE_OUT);
-		tween.set_trans(Tween.TRANS_QUINT);
-		tween.tween_property(card, "position",target_pos,0.15);
+		var card = hands[i]
+		var base_pos = base_positions[i]
+		var x_offset = current_x_offsets[i] if i < current_x_offsets.size() else 0.0
+		var target_pos = Vector2(base_pos.x + x_offset, base_pos.y + current_y_offset)
+		var target_rot = t_rot[i] if i < t_rot.size() else 0.0
+
+		if animate:
+			# 创建并执行一个 Tween 动画
+			var tween = create_tween()
+			tween.set_ease(Tween.EASE_OUT)
+			tween.set_trans(Tween.TRANS_QUINT)
+			tween.tween_property(card, "position", target_pos, 0.2)
+			tween.parallel().tween_property(card, "rotation", target_rot, 0.2)
+		else:
+			card.position = target_pos
+			card.rotation = target_rot
 func _on_hand_hover_entered():
 	hover_count+=1;
 	if hover_count==1:
@@ -169,15 +179,20 @@ func _process(delta):
 			is_hovering=0;
 			_move_cards(0.0);
 # 打牌
-func play_card (card:BattleCardUI,target: Vector2):
-	var index=hands.find(card);
+# HandContainer.gd - 修改 play_card
+func play_card (card: BattleCardUI,target: Vector2):
+	card.set_interactive(false)
+	card.select_card();
+	var index=hands.find(card)
 	if index!=-1:
 		hands.remove_at(index);
-		base_positions.remove_at(index);
-	card.fly_to(target,0.4,func():
-		_card_hold_awit(card);
-	);
+		#base_positions.remove_at(index);
 	_arrange_cards();
+	_apply_card_pos();
+	card.fly_to(target, 0.4, func():
+		_card_hold_awit(card);
+	)
+	
 # 打出后悬停，之后接别的
 func _card_hold_awit (card: BattleCardUI):
 	var tween=create_tween();
@@ -197,25 +212,24 @@ func _draw_one_card ():
 	if bm==null:
 		print("wrong\n");
 		return ;
-	var card_data=bm._get_next_card_from_deck();
+	var card_data=bm.draw_one();
 	if card_data==null:
 		return ;
 	var card=BattleCardUI.new();
-	card.setup(card_data);
+	card.setup(card_data); 
+	card.hover_entered.connect(_on_card_hover_entered);
+	card.hover_exited.connect(_on_card_hover_exited);
+	card.hand_hover_entered.connect(_on_hand_hover_entered);
+	card.hand_hover_exited.connect(_on_hand_hover_exited);
 	add_child(card);
 	hands.append(card);
 	var s_pos=Vector2(-100,720-50);
 	card.global_position=s_pos;
 	_arrange_cards();
-	var target_pos=base_positions[hands.size()-1];
-	var tween=create_tween();
-	tween.set_ease(Tween.EASE_OUT);
-	tween.set_trans(Tween.TRANS_QUINT);
-	tween.tween_property(card,"position",target_pos,0.6);
+	_apply_card_positions();
 # 弃一张牌
-# HandContainer.gd
-func discard_card(card: BattleCardUI) -> void:
-	var index=hands.find(card)
+func discard_card(card: BattleCardUI):
+	var index=hands.find(card);
 	if index==-1: 
 		return ;
 	hands.remove_at(index);
@@ -228,3 +242,10 @@ func discard_card(card: BattleCardUI) -> void:
 	_arrange_cards();
 	# 让卡牌播放“弃牌动画”，动画结束后自动销毁
 	card.play_discard_animation();
+
+# HandContainer.gd - 实现 try_play_card
+func try_play_card(card: BattleCardUI, mouse_pos: Vector2) -> void:
+	# 先判断鼠标是否在有效目标区域内
+	# 暂时统一用一个固定位置
+	var target = Vector2(640,150)  # 屏幕中央偏上
+	play_card(card, target)

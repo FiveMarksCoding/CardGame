@@ -14,6 +14,8 @@ var is_selected: bool=0;
 var is_hovered: bool=0;
 #卡牌使用双层 Control,外层负责交互，内层负责渲染
 var _inner: Control;
+# 碰撞箱
+var hitbox: ColorRect;
 # 鼠标悬停状态信号
 signal hover_entered(card: BattleCardUI);
 signal hover_exited(card: BattleCardUI);
@@ -118,7 +120,8 @@ func _ready ():
 	size=Vector2(BASE_WIDTH,BASE_HEIGHT);  
 	mouse_filter=Control.MOUSE_FILTER_STOP;
 	# 卡牌碰撞箱
-	var hitbox=ColorRect.new()
+	hitbox=ColorRect.new()
+	hitbox.name="hitbox";
 	hitbox.color=Color(0,0,0,0); 
 	hitbox.size=Vector2(BASE_WIDTH,BASE_HEIGHT);
 	hitbox.mouse_filter=Control.MOUSE_FILTER_STOP;
@@ -126,8 +129,15 @@ func _ready ():
 	# 信号
 	hitbox.mouse_entered.connect(_on_mouse_entered);
 	hitbox.mouse_exited.connect(_on_mouse_exited);
+	hitbox.gui_input.connect(_on_hitbox_gui_input)
 	#print("CardUI _ready 被调用，mouse_filter=",mouse_filter);
 	#print("CardUI _ready 被调用");
+# 通过节点名称查找 hitbox
+func set_interactive(enabled: bool):
+	for i in get_children():
+		if (i is ColorRect) && (i.name == "hitbox"):
+			i.mouse_filter=Control.MOUSE_FILTER_STOP if enabled else Control.MOUSE_FILTER_IGNORE;
+			break;
 # 选中 / 取消选中
 func select_card() -> void:
 	if is_selected: 
@@ -167,11 +177,16 @@ func get_hovered() -> bool:
 	return is_hovered
 # 飞向目标。中国人能飞
 func fly_to (pos1:Vector2,time: float=0.3,callback: Callable=Callable()):
+	var tree=get_tree();
+	if !tree:
+		print("fly_to: 树不存在，无法继续");
+		return;
 	var p=get_parent();
+	var current_global=global_position  # 记录当前位置
 	if p:
 		p.remove_child(self);
-		get_tree().root.add_child(self);
-	global_position=get_global_mouse_position()-(size/2);
+	tree.root.add_child(self);
+	global_position=current_global;  # 恢复位置
 	var tween=create_tween();
 	tween.set_ease(Tween.EASE_OUT);
 	tween.set_trans(Tween.TRANS_QUINT);
@@ -179,20 +194,20 @@ func fly_to (pos1:Vector2,time: float=0.3,callback: Callable=Callable()):
 	if callback!=Callable():
 		tween.tween_callback(callback);
 # 拖拽
-func _gui_input (event: InputEvent):
-	if (event is InputEventMouseButton) && (event.button_index==MOUSE_BUTTON_LEFT):
+func _on_hitbox_gui_input(event: InputEvent):
+	if (event is InputEventMouseButton) and (event.button_index == MOUSE_BUTTON_LEFT):
 		if event.pressed:
-			is_dragging=1;
-			drag_start=get_global_mouse_position();
-		var tween=create_tween();
-		tween.tween_property(_inner,"scale",Vector2(1.1,1.1),0.1);
-	else:
-		if is_dragging:
-			var pos=get_global_mouse_position();
-			var hand_container=get_parent();
-			if hand_container && hand_container.has_method("try_play_card"):
-				hand_container.try_play_card(self,pos);
-			is_dragging=0;
+			is_dragging = true
+			drag_start = get_global_mouse_position()
+			var tween = create_tween()
+			tween.tween_property(_inner, "scale", Vector2(1.1, 1.1), 0.1)
+		else:
+			if is_dragging:
+				var pos = get_global_mouse_position()
+				var hand_container = get_parent()
+				if hand_container and hand_container.has_method("try_play_card"):
+					hand_container.try_play_card(self, pos)
+				is_dragging = false
 func _process(delta: float):
 	if is_dragging:
 		global_position=get_global_mouse_position()-(size/2);
@@ -205,4 +220,3 @@ func play_discard_animation() -> void:
 	tween.set_ease(Tween.EASE_IN);
 	tween.tween_property(self,"global_position",end_pos,0.15);
 	tween.parallel().tween_property(self, "modulate",Color(1,1,1,0),0.15);
-	tween.tween_callback(queue_free);
