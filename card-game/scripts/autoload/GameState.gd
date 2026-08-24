@@ -12,6 +12,8 @@ func create_new_deck() -> Array[CardData]:
 	var deck:Array[CardData] = []
 	deck.append(CardData.new("strike", "打击", 1, "attack", 5, 0, true));
 	deck.append(CardData.new("strike", "打击", 1, "attack", 5, 0, true));
+	deck.append(CardData.new("strike", "打击", 1, "attack", 5, 0, true));
+	deck.append(CardData.new("strike", "铁斩波", 1, "attack", 6, 6, true));
 	deck.append(CardData.new("defend", "防御", 1, "skill", 0, 4, false));
 	deck.append(CardData.new("defend", "防御", 1, "skill", 0, 4, false));
 	return deck;

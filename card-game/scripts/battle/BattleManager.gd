@@ -12,6 +12,7 @@ func _ready ():
 	var copydeck=GameState.player_deck.duplicate();
 	draw=copydeck;
 	print("抽牌堆初始化完成，共 %d 张牌" % draw.size());
+	print("战斗场景加载完成，等待手牌显示")
 func shuffle_pile(pile: Array[CardData]) -> void:
 	pile.shuffle();
 func draw_one () -> CardData:

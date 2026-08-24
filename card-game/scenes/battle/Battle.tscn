@@ -1,6 +1,7 @@
 [gd_scene format=3 uid="uid://bapyre67e2rfi"]
 
 [ext_resource type="Script" uid="uid://hpew7rfpeaa2" path="res://scripts/battle/BattleManager.gd" id="1_omw3i"]
+[ext_resource type="Script" uid="uid://chhy0nr1nir2m" path="res://scripts/battle/HandContainer.gd" id="2_g84ej"]
 
 [sub_resource type="GDScript" id="GDScript_omw3i"]
 
@@ -19,3 +20,16 @@ color = Color(0.101960786, 0.101960786, 0.18039216, 1)
 
 [node name="BattleManager" type="Node" parent="." unique_id=243460449]
 script = ExtResource("1_omw3i")
+
+[node name="HandContainer" type="Control" parent="." unique_id=602936149]
+layout_mode = 3
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = 520.0
+offset_right = 1280.0
+offset_bottom = 720.0
+grow_horizontal = 2
+grow_vertical = 0
+script = ExtResource("2_g84ej")
