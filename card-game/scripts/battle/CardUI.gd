@@ -23,6 +23,10 @@ signal hover_exited(card: BattleCardUI);
 signal hand_hover_entered();
 signal hand_hover_exited();
 # 拖拽
+# CardUI.gd - 在信号区域添加
+signal drag_started(card: BattleCardUI,mouse_pos: Vector2);
+signal drag_ended(card: BattleCardUI,mouse_pos: Vector2);
+signal drag_moved(card: BattleCardUI,mouse_pos: Vector2);
 var is_dragging: bool=0;
 var drag_start: Vector2=Vector2.ZERO;
 # 卡牌渲染。临时
@@ -162,12 +166,12 @@ func _on_mouse_entered() -> void:
 	hover_entered.emit(self);
 	hand_hover_entered.emit();
 	#emit(self)表示发射信号，并将自己（本张牌）作为参数发射
-	print("鼠标进入了卡牌");
+	#print("鼠标进入了卡牌");
 func _on_mouse_exited() -> void:
 	is_hovered = false
 	hover_exited.emit(self);
 	hand_hover_exited.emit();
-	print("鼠标离开了卡牌");
+	#print("鼠标离开了卡牌");
 # 对外接口（供父节点调用）
 func get_card_data() -> CardData:
 	return card_data
@@ -195,23 +199,25 @@ func fly_to (pos1:Vector2,time: float=0.3,callback: Callable=Callable()):
 		tween.tween_callback(callback);
 # 拖拽
 func _on_hitbox_gui_input(event: InputEvent):
-	if (event is InputEventMouseButton) and (event.button_index == MOUSE_BUTTON_LEFT):
+	if (event is InputEventMouseButton) && (event.button_index == MOUSE_BUTTON_LEFT):
 		if event.pressed:
-			is_dragging = true
-			drag_start = get_global_mouse_position()
-			var tween = create_tween()
-			tween.tween_property(_inner, "scale", Vector2(1.1, 1.1), 0.1)
+			is_dragging=1;
+			drag_start=get_global_mouse_position();
+			drag_started.emit(self,drag_start);
+			var tween=create_tween();
+			tween.tween_property(_inner,"scale",Vector2(1.1, 1.1),0.1);
 		else:
 			if is_dragging:
-				var pos = get_global_mouse_position()
-				var hand_container = get_parent()
-				if hand_container and hand_container.has_method("try_play_card"):
-					hand_container.try_play_card(self, pos)
-				is_dragging = false
+				var pos=get_global_mouse_position();
+				var hand_container=get_parent();
+				if hand_container && hand_container.has_method("try_play_card"):
+					hand_container.try_play_card(self,pos);
+				drag_ended.emit(self,pos);
+				is_dragging=0;
 func _process(delta: float):
 	if is_dragging:
-		global_position=get_global_mouse_position()-(size/2);
-		# 卡牌跟随鼠标
+		global_position=get_global_mouse_position()-(size/2);   # 卡牌跟随鼠标
+		drag_moved.emit(self,get_global_mouse_position());
 # 弃牌动画
 # 弃牌后子节点先销毁，需要单独动画
 func play_discard_animation() -> void:

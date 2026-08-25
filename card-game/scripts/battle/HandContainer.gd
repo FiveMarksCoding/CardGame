@@ -7,8 +7,8 @@ const ROT_MAX: float=0.17;           # 最大旋转弧度 (约 11.5°)
 const CARD_WIDTH: float=120.0
 const CARD_HEIGHT: float=160.0;
 const CARD_SPACING: float=10.0;
-const HOVER_UP_OFFSET: float=-60.0;  # 上移距离（负值表示向上）
-const CARD_y: int=30;
+const HOVER_UP_OFFSET: float=-30.0;  # 上移距离（负值表示向上）
+const CARD_y: int=60;
 const SCATTER_OFFSET_LEFT=60.0;      # 左撤退距离
 const SCATTER_OFFSET_RIGHT=90.0;     # 右撤退距离
 const MAX_ANGLE_DEG=15.0;   	# 最大倾斜角度（弧度）
@@ -24,11 +24,13 @@ var current_y_offset: float=0.0;
 var current_x_offsets: Array[float]=[];  # 每张牌独立的水平偏移
 var t_pos: Array[Vector2]=[];  # 存储计算好的目标位置
 var t_rot: Array[float]=[];      # 方向
+var drag_active: bool=0;
+var drag_card: BattleCardUI=null;
 
 func _ready ():
 	mouse_filter=Control.MOUSE_FILTER_IGNORE;
 	#HandContainer 不应该拦截鼠标事件
-	hover_count = 0;
+	hover_count=0;
 	current_x_offsets=[];
 	for i in range(hands.size()):
 		current_x_offsets.append(0.0);
@@ -61,7 +63,6 @@ func _arrange_cards ():
 	var start_x=(size.x-total_width)/2.0;
 	var y_offset=CARD_y;
 	for i in range(n):
-		var card=hands[i];
 		# 离散化
 		var t: float;
 		if n==1:
@@ -99,7 +100,7 @@ func _set_all_card_scale (scale_target: float):
 		tween.tween_property(i,"scale",Vector2(scale_target,scale_target),0.15);
 # 单卡选中
 func _on_card_hover_entered(card: BattleCardUI):
-	print("悬停触发")   # ← 加这行
+	#print("悬停触发")   # ← 加这行
 	card.select_card(); 
 	_spread_cards(card);
 func _on_card_hover_exited(card: BattleCardUI):
@@ -143,6 +144,8 @@ func _apply_card_positions(animate: bool = true):
 	
 	for i in range(hands.size()):
 		var card = hands[i]
+		if (card==drag_card && drag_active) || !animate:
+			continue;
 		var base_pos = base_positions[i]
 		var x_offset = current_x_offsets[i] if i < current_x_offsets.size() else 0.0
 		var target_pos = Vector2(base_pos.x + x_offset, base_pos.y + current_y_offset)
@@ -160,15 +163,14 @@ func _apply_card_positions(animate: bool = true):
 			card.rotation = target_rot
 func _on_hand_hover_entered():
 	hover_count+=1;
-	if hover_count==1:
-		# 如果计时器正在运行，取消它（说明鼠标又回来了）
-		exit_timer=0.0
+	if hover_count==1 && !drag_active:
+		exit_timer=0.0;
 		is_hovering=1;
 		_move_cards(HOVER_UP_OFFSET);
+
 func _on_hand_hover_exited():
-	hover_count-=1;
-	if hover_count==0:
-		# 启动延迟计时器，而不是立即下移
+	hover_count-=1
+	if hover_count==0 && !drag_active:
 		exit_timer=EXIT_DELAY;
 func _process(delta):
 	if exit_timer>0:
@@ -221,6 +223,9 @@ func _draw_one_card ():
 	card.hover_exited.connect(_on_card_hover_exited);
 	card.hand_hover_entered.connect(_on_hand_hover_entered);
 	card.hand_hover_exited.connect(_on_hand_hover_exited);
+	card.drag_started.connect(_on_card_drag_started);
+	card.drag_ended.connect(_on_card_drag_ended);
+	card.drag_moved.connect(_on_card_drag_moved);
 	add_child(card);
 	hands.append(card);
 	var s_pos=Vector2(-100,720-50);
@@ -242,10 +247,73 @@ func discard_card(card: BattleCardUI):
 	_arrange_cards();
 	# 让卡牌播放“弃牌动画”，动画结束后自动销毁
 	card.play_discard_animation();
-
-# HandContainer.gd - 实现 try_play_card
+# 手牌区域计算
+func _get_hand_area () -> Rect2:
+	#print(base_positions);
+	if !base_positions.size():
+		return Rect2();
+	var min_x=base_positions[0].x;
+	var max_x=base_positions[0].x+CARD_WIDTH;
+	var min_y=base_positions[0].y;
+	var max_y=base_positions[0].y+CARD_HEIGHT;
+	for i in base_positions:
+		min_x=min(min_x,i.x);
+		max_x=max(max_x,i.x+CARD_WIDTH);
+		min_y=min(min_y,i.y);
+		max_y=max(max_y,i.y+CARD_HEIGHT);
+	var t=20.0;  # margin
+	return Rect2(min_x-t,min_y-t,max_x-min_x+t*2,max_y-min_y+t*2);
+@warning_ignore("unused_parameter")
 func try_play_card(card: BattleCardUI, mouse_pos: Vector2) -> void:
-	# 先判断鼠标是否在有效目标区域内
-	# 暂时统一用一个固定位置
-	var target = Vector2(640,150)  # 屏幕中央偏上
-	play_card(card, target)
+	var local_mouse=get_local_mouse_position();
+	var hand_area=_get_hand_area();
+	#print(local_mouse);
+	#print(hand_area);
+	if hand_area.has_point(local_mouse):
+		print("鼠标在手牌区域内，取消打出");
+		_cancel_play(card);
+		return;
+	print("鼠标已离开手牌区，执行打出");
+	var target=Vector2(800,150);
+	play_card(card, target);
+func _cancel_play(card: BattleCardUI):
+	card.set_interactive(1);
+	var index=hands.find(card);
+	if index!=-1:
+		@warning_ignore("shadowed_variable")
+		var t_pos=base_positions[index];
+		var tar_rot=t_rot[index];
+		var tween=create_tween();
+		tween.set_ease(Tween.EASE_OUT);
+		tween.set_trans(Tween.TRANS_QUINT);
+		tween.tween_property(card,"position",t_pos,0.2);
+		tween.parallel().tween_property(card,"rotation",tar_rot,0.2);
+	else:
+		print("错误：手上有未知卡牌");
+		card.queue_free();
+# 拖拽控制手牌上浮
+func _on_card_drag_started(card: BattleCardUI, mouse_pos: Vector2):
+	drag_active=1;
+	drag_card=card;
+	_update_drag_float(mouse_pos);
+func _on_card_drag_moved(card: BattleCardUI, mouse_pos: Vector2):
+	if drag_active:
+		_update_drag_float(mouse_pos)
+func _on_card_drag_ended(card: BattleCardUI, mouse_pos: Vector2):
+	drag_active=0;
+	drag_card=null;
+	_update_float_from_hover();
+func _update_drag_float (pos: Vector2):
+	var local_mouse=get_local_mouse_position();
+	var hand_area=_get_hand_area();
+	if hand_area.has_point(local_mouse):
+		if current_y_offset!=HOVER_UP_OFFSET:
+			_move_cards(HOVER_UP_OFFSET);
+	else:
+		if current_y_offset!=0.0:
+			_move_cards(0.0);
+func _update_float_from_hover ():
+	if hover_count>0:
+		_move_cards(HOVER_UP_OFFSET);
+	else:
+		_move_cards(0.0);
