@@ -270,10 +270,10 @@ func try_play_card(card: BattleCardUI, mouse_pos: Vector2) -> void:
 	#print(local_mouse);
 	#print(hand_area);
 	if hand_area.has_point(local_mouse):
-		print("鼠标在手牌区域内，取消打出");
+		#print("鼠标在手牌区域内，取消打出");
 		_cancel_play(card);
 		return;
-	print("鼠标已离开手牌区，执行打出");
+	#print("鼠标已离开手牌区，执行打出");
 	var target=Vector2(800,150);
 	play_card(card, target);
 func _cancel_play(card: BattleCardUI):
