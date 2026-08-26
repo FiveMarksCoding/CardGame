@@ -28,6 +28,7 @@ var drag_active: bool=0;
 var drag_card: BattleCardUI=null;
 
 func _ready ():
+	z_index=99;
 	mouse_filter=Control.MOUSE_FILTER_IGNORE;
 	#HandContainer 不应该拦截鼠标事件
 	hover_count=0;
@@ -268,17 +269,21 @@ func _get_hand_area () -> Rect2:
 	var t=20.0;  # margin
 	return Rect2(min_x-t,min_y-t,max_x-min_x+t*2,max_y-min_y+t*2);
 @warning_ignore("unused_parameter")
-func try_play_card(card: BattleCardUI, mouse_pos: Vector2) -> void:
+func try_play_card(card: BattleCardUI, mouse_pos: Vector2):
 	var local_mouse=get_local_mouse_position();
 	var hand_area=_get_hand_area();
-	#print(local_mouse);
-	#print(hand_area);
 	if hand_area.has_point(local_mouse):
-		#print("鼠标在手牌区域内，取消打出");
 		_cancel_play(card);
 		return;
-	#print("鼠标已离开手牌区，执行打出");
-	var target=Vector2(800,150);
+	var bm=_get_battle_manager();
+	if bm==null:
+		return ;
+	var reqs=card.card_data.energy_re;
+	if !reqs.is_empty():
+		if !bm.consume_energy(reqs):
+			_cancel_play(card);
+			return	;
+	var target=Vector2(930,240);
 	play_card(card, target);
 func _cancel_play(card: BattleCardUI):
 	card.set_interactive(1);

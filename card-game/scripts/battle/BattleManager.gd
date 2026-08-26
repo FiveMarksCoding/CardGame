@@ -247,3 +247,24 @@ func _update_player_ui():
 		_hp_label.text = "❤ %d/%d" % [player_health, player_max_health]
 	if _block_label:
 		_block_label.text = "🛡 %d" % player_block
+func consume_energy(requirements: Array) -> bool:
+	var temp_q=energy_q.duplicate();
+	var used_indexes: Array=[];
+	for i in requirements:
+		var yes=0;
+		for j in range(temp_q.size()):
+			# 如果该索引已被使用，跳过
+			if j in used_indexes:
+				continue;
+			# 检查当前能量颜色是否满足需求
+			if temp_q[j] in i:
+				used_indexes.append(j);
+				yes=1;
+				break;
+		if !yes:
+			return 0;
+	used_indexes.sort();
+	for i in range(used_indexes.size()-1,-1,-1):
+		energy_q.remove_at(used_indexes[i]);
+	energy_changed.emit();
+	return 1;

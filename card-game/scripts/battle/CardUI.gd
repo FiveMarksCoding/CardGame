@@ -160,6 +160,8 @@ func deselect_card() -> void:
 	tween.tween_property(_inner,"scale",Vector2.ONE,0.1);
 # 鼠标事件
 func _on_mouse_entered() -> void:
+	if is_dragging:
+		return ;
 	is_hovered = true
 	# 通知父节点（手牌容器）当前悬停的是这张牌
 	# 父节点会负责处理：放大、散开、切换等
