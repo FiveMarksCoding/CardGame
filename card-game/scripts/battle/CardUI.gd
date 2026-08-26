@@ -221,8 +221,9 @@ func _process(delta: float):
 # 弃牌动画
 # 弃牌后子节点先销毁，需要单独动画
 func play_discard_animation() -> void:
-	var end_pos=global_position+Vector2(200, 0);
+	var end_pos=global_position+Vector2(300, 0);
 	var tween=create_tween();
 	tween.set_ease(Tween.EASE_IN);
-	tween.tween_property(self,"global_position",end_pos,0.15);
-	tween.parallel().tween_property(self, "modulate",Color(1,1,1,0),0.15);
+	tween.tween_property(self,"global_position",end_pos,0.2);
+	tween.parallel().tween_property(self, "modulate",Color(1,1,1,0),0.2);
+	tween.tween_callback(queue_free);

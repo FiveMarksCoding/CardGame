@@ -8,14 +8,16 @@ func _ready():
 	player_deck = create_new_deck();
 	gold = 99;
 	print("GameState 已加载, 卡组共 %d 张，gold = %d" % [player_deck.size(),gold]);
+# GameState.gd - create_new_deck()
 func create_new_deck() -> Array[CardData]:
-	var deck:Array[CardData] = []
-	deck.append(CardData.new("strike", "打击", 1, "attack", 5, 0, true));
-	deck.append(CardData.new("strike", "打击", 1, "attack", 5, 0, true));
-	deck.append(CardData.new("strike", "打击", 1, "attack", 5, 0, true));
-	deck.append(CardData.new("strike", "铁斩波", 1, "attack", 6, 6, true));
-	deck.append(CardData.new("defend", "防御", 1, "skill", 0, 4, false));
-	deck.append(CardData.new("defend", "防御", 1, "skill", 0, 4, false));
+	var deck: Array[CardData] = []
+	# 所有牌目前都设为无色，消耗 1 点无色
+	deck.append(CardData.new("strike", "打击", 1, "attack", 5, 0, true, "", "neutral", [["neutral"]]));
+	deck.append(CardData.new("strike", "打击", 1, "attack", 5, 0, true, "", "neutral", [["neutral"]]));
+	deck.append(CardData.new("strike", "打击", 1, "attack", 5, 0, true, "", "neutral", [["neutral"]]));
+	deck.append(CardData.new("strike", "铁斩波", 1, "attack", 6, 6, true, "", "neutral", [["neutral"], ["neutral"]]));
+	deck.append(CardData.new("defend", "防御", 1, "skill", 0, 4, false, "", "neutral", [["neutral"]]));
+	deck.append(CardData.new("defend", "防御", 1, "skill", 0, 4, false, "", "neutral", [["neutral"]]));
 	return deck;
 func add_new_card (card: CardData) -> void:
 	player_deck.append(card);

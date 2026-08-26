@@ -18,4 +18,4 @@ func get_intent_group() -> Array:
 	# 从意图池中随机选一组（简单实现：直接取第一个）
 	if intent_pool.is_empty():
 		return [];
-	return intent_pool[randi()%intent_pool.size()].duplicate()
+	return intent_pool[randi()%intent_pool.size()].duplicate();

@@ -34,7 +34,14 @@ func _ready ():
 	current_x_offsets=[];
 	for i in range(hands.size()):
 		current_x_offsets.append(0.0);
-	_add_test_cards();
+	_create_energy_ui();
+func _create_energy_ui ():
+	var EnergyUI_script=preload("res://scripts/battle/EnergyUI.gd");
+	var energy_ui=EnergyUI_script.new();
+	energy_ui.name="EnergyUI";
+	energy_ui.position=Vector2(0,size.y-250);
+	energy_ui.size=Vector2(size.x,40);
+	add_child(energy_ui);
 func _get_battle_manager() -> BattleManager:
 	var p=get_parent();
 	while p:
@@ -42,12 +49,6 @@ func _get_battle_manager() -> BattleManager:
 			return p.get_node("BattleManager") as BattleManager;
 		p=p.get_parent();
 	return null;
-func _add_test_cards():
-	# 延迟 0.2 秒后开始抽牌，让玩家看到起始状态
-	await get_tree().create_timer(0.2).timeout
-	for i in range(5):
-		_draw_one_card()
-		await get_tree().create_timer(0.1).timeout  # 每张牌间隔 0.15 秒
 #排列卡牌（只计算）
 func _arrange_cards ():
 	var n=hands.size();
@@ -209,14 +210,14 @@ func _card_hold_awit (card: BattleCardUI):
 		fly_tween.tween_callback(card.queue_free);
 	);
 # 抽一张牌
-func _draw_one_card ():
+func draw_one_card () -> bool:
 	var bm=_get_battle_manager();
 	if bm==null:
 		print("wrong\n");
-		return ;
+		return 0;
 	var card_data=bm.draw_one();
 	if card_data==null:
-		return ;
+		return 0;
 	var card=BattleCardUI.new();
 	card.setup(card_data); 
 	card.hover_entered.connect(_on_card_hover_entered);
@@ -232,20 +233,23 @@ func _draw_one_card ():
 	card.global_position=s_pos;
 	_arrange_cards();
 	_apply_card_positions();
+	return 1;
 # 弃一张牌
 func discard_card(card: BattleCardUI):
 	var index=hands.find(card);
 	if index==-1: 
 		return ;
+	var global_pos=card.global_position;
+	var bm=_get_battle_manager();
+	if bm:
+		var card_data=card.card_data;  
+		bm.discard.append(card_data);  
+		print("弃牌：",card_data.card_name);
+		
 	hands.remove_at(index);
 	base_positions.remove_at(index);
-	# 把卡牌从 HandContainer 移出（但还没销毁）
-	remove_child(card);
-	get_tree().root.add_child(card);
-	card.global_position = global_position;
 	# 重新排列剩余手牌
 	_arrange_cards();
-	# 让卡牌播放“弃牌动画”，动画结束后自动销毁
 	card.play_discard_animation();
 # 手牌区域计算
 func _get_hand_area () -> Rect2:
@@ -296,13 +300,16 @@ func _on_card_drag_started(card: BattleCardUI, mouse_pos: Vector2):
 	drag_active=1;
 	drag_card=card;
 	_update_drag_float(mouse_pos);
+@warning_ignore("unused_parameter")
 func _on_card_drag_moved(card: BattleCardUI, mouse_pos: Vector2):
 	if drag_active:
 		_update_drag_float(mouse_pos)
+@warning_ignore("unused_parameter")
 func _on_card_drag_ended(card: BattleCardUI, mouse_pos: Vector2):
 	drag_active=0;
 	drag_card=null;
 	_update_float_from_hover();
+@warning_ignore("unused_parameter")
 func _update_drag_float (pos: Vector2):
 	var local_mouse=get_local_mouse_position();
 	var hand_area=_get_hand_area();

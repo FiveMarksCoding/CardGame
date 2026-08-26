@@ -144,7 +144,7 @@ func take_damage (amount: int):
 	await get_tree().create_timer(0.1).timeout;
 	modulate=Color.WHITE;
 func is_dead () -> bool:
-	return data.current_health<=0;
+	return data.current_hp<=0;
 func get_intent_count () -> int:
 	return intent_items.size();
 func get_intent_data (index: int) -> Intent:
@@ -162,3 +162,46 @@ func remove_intent (index: int):
 	if index>=0 && index<intents.size():
 		intents.remove_at(index);
 		_update_intents();
+func execute_intents () -> Array:
+	# 返回值记录本次执行产生的效果（用于 BattleManager 汇总）
+	var results: Array=[];
+	var intents=data.get_intent_group();
+	for i in intents:
+		var result=execute_one(i);
+		results.append(result);
+	_update_intents();
+	return results;
+func execute_one (intent: Intent) -> Dictionary:
+	var result = {
+		"type": intent.type,
+		"value": intent.value,
+		"times": intent.times,
+		"success": true
+	};
+	match intent.type:
+		Intent.Type.ATTACK:
+			# 攻击：返回伤害值，由 BattleManager 处理扣血
+			result["damage"]=intent.value*intent.times;
+			print("%s 攻击 %d 次，每次 %d 伤害" % [data.name, intent.times, intent.value])
+			
+		Intent.Type.DEFEND:
+			# 防御：给自己加格挡（暂时只打印，实际由 BattleManager 处理）
+			result["block"]=intent.value*intent.times;
+			print("%s 获得 %d 点格挡" % [data.name, result["block"]])
+			
+		Intent.Type.BUFF:
+			# 增益：给自己加力量（暂时只打印）
+			result["strength"]=intent.value;
+			print("%s 获得 %d 点力量" % [data.name, intent.value])
+			
+		Intent.Type.HEAL:
+			# 治疗：给自己回血
+			var heal_amount=intent.value*intent.times;
+			data.current_hp=min(data.current_hp+heal_amount,data.max_hp);
+			result["heal"]=heal_amount;
+			print("%s 治疗 %d 点生命" % [data.name, heal_amount])
+			
+		_:
+			print("%s 执行未知意图.这啥玩意" % data.name)
+			result["success"]=0;
+	return result;
