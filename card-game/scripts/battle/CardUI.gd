@@ -216,6 +216,11 @@ func _on_hitbox_gui_input(event: InputEvent):
 					hand_container.try_play_card(self,pos);
 				drag_ended.emit(self,pos);
 				is_dragging=0;
+	if (event is InputEventMouseButton) && (event.button_index==MOUSE_BUTTON_RIGHT):
+		if event.pressed:
+			var hand_container=get_parent();
+			if hand_container && hand_container.has_method("request_color_card"):
+				hand_container.request_color_card(self);
 func _process(delta: float):
 	if is_dragging:
 		global_position=get_global_mouse_position()-(size/2);   # 卡牌跟随鼠标

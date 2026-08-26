@@ -250,21 +250,47 @@ func _update_player_ui():
 func consume_energy(requirements: Array) -> bool:
 	var temp_q=energy_q.duplicate();
 	var used_indexes: Array=[];
+	var n=temp_q.size();
 	for i in requirements:
-		var yes=0;
-		for j in range(temp_q.size()):
-			# 如果该索引已被使用，跳过
+		var chosen=-1;   # index
+		for j in range(n):
 			if j in used_indexes:
 				continue;
-			# 检查当前能量颜色是否满足需求
-			if temp_q[j] in i:
-				used_indexes.append(j);
-				yes=1;
+			var e_color=temp_q[j];
+			if (e_color!=ENERGY_NEUTRAL) && (e_color in i):
+				chosen=j;
 				break;
-		if !yes:
+		if (chosen==-1) && (ENERGY_NEUTRAL in i):
+			for j in range(n):
+				if j in used_indexes:
+					continue;
+				if temp_q[j]==ENERGY_NEUTRAL:
+					chosen=j;
+					break;
+		if chosen==-1:
 			return 0;
+		used_indexes.append(chosen);
 	used_indexes.sort();
 	for i in range(used_indexes.size()-1,-1,-1):
 		energy_q.remove_at(used_indexes[i]);
 	energy_changed.emit();
 	return 1;
+# 尝试染色：将手牌颜色添加到能量队列
+# 返回: 是否成功染色
+func try_color_card(card_data: CardData) -> bool:
+	if card_data.card_color==ENERGY_NEUTRAL:
+		return 0;
+	# 检查是否有无色能量（从左到右找第一个）
+	var neutral_index=-1;
+	for i in range(energy_q.size()):
+		if energy_q[i]==ENERGY_NEUTRAL:
+			neutral_index=i;
+			break;
+	if neutral_index==-1:
+		return 0;
+	energy_q[neutral_index]=card_data.card_color;
+	energy_changed.emit();
+	#print("染色成功：%s → %s" % [card_data.card_name, card_data.card_color])
+	return 1;
+	
+	

@@ -190,6 +190,10 @@ func play_card (card: BattleCardUI,target: Vector2):
 	var index=hands.find(card)
 	if index!=-1:
 		hands.remove_at(index);
+		var bm=_get_battle_manager();
+		if bm:
+			bm.discard.append(card.card_data);
+			#print("打出并弃牌：", card.card_data.card_name);
 		#base_positions.remove_at(index);
 	_arrange_cards();
 	_apply_card_pos();
@@ -329,3 +333,18 @@ func _update_float_from_hover ():
 		_move_cards(HOVER_UP_OFFSET);
 	else:
 		_move_cards(0.0);
+func request_color_card(card: BattleCardUI):
+	var bm=_get_battle_manager()
+	if bm==null:
+		return ;
+	if !bm.is_player_turn:
+		#print("敌人回合，无法染色")
+		return ;
+	if !(card in hands):
+		return ;
+	# 尝试染色
+	var s=bm.try_color_card(card.card_data)
+	if s:
+		discard_card(card);
+	else:
+		print("染色失败");
