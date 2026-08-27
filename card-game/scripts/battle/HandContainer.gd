@@ -284,21 +284,22 @@ func try_play_card(card: BattleCardUI, mouse_pos: Vector2):
 	var bm=_get_battle_manager()
 	if bm==null:
 		return;
+	# 目标检查
+	var target: Enemy=null;
+	if card.card_data.needs_target:
+		target=_get_target_at_mouse(mouse_pos);
+		if target==null:
+			# 没有目标，取消打出
+			_cancel_play(card);
+			return;
 	# 能量检查
 	var reqs=card.card_data.energy_re;
 	if !reqs.is_empty():
 		if !bm.consume_energy(reqs):
 			_cancel_play(card);
 			return;
-	var target: Enemy=null;
-	if card.card_data.needs_target:
-		target=_get_target_at_mouse(mouse_pos)
-		if target==null:
-			# 没有目标，取消打出
-			_cancel_play(card);
-			return
 	# 执行打出
-	var target_pos = target.global_position if target else Vector2(930,240);
+	var target_pos=Vector2(930,240);
 	play_card(card,target_pos);
 func _cancel_play(card: BattleCardUI):
 	card.set_interactive(1);
