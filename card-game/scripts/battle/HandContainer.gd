@@ -213,7 +213,7 @@ func _execute_card_effect (card_data: CardData,target: Enemy):
 	# 格挡
 	if card_data.block > 0:
 		bm.player_block += card_data.block
-		bm._update_player_ui()
+		bm.player_block_changed.emit(bm.player_block);
 		print("获得 %d 点格挡" % card_data.block)
 # 打出后悬停，之后接别的
 func _card_hold_awit (card: BattleCardUI):
@@ -356,7 +356,7 @@ func _on_card_drag_ended(card: BattleCardUI, mouse_pos: Vector2):
 @warning_ignore("unused_parameter")
 func _update_drag_float (pos: Vector2):
 	if drag_active && drag_card && drag_card.card_data.needs_target:
-		return ;5
+		return ;
 	var local_mouse=get_local_mouse_position();
 	var hand_area=_get_hand_area();
 	if hand_area.has_point(local_mouse):
@@ -366,7 +366,7 @@ func _update_drag_float (pos: Vector2):
 		if current_y_offset!=0.0:
 			_move_cards(0.0);
 # 获取鼠标下的敌人目标
-func _get_target_at_mouse(mouse_pos: Vector2) -> Enemy:
+func _get_target_at_mouse(_mouse_pos: Vector2) -> Enemy:
 	var bm=_get_battle_manager();
 	if !bm:
 		return null;
