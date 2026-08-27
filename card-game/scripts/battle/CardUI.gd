@@ -29,6 +29,8 @@ signal drag_ended(card: BattleCardUI,mouse_pos: Vector2);
 signal drag_moved(card: BattleCardUI,mouse_pos: Vector2);
 var is_dragging: bool=0;
 var drag_start: Vector2=Vector2.ZERO;
+var _aim_line: Line2D=null;
+var _aim_target: Node2D=null;  # 当前瞄准的目标
 # 卡牌渲染。临时
 func _build_visuals() -> void:
 	#内层容器
@@ -210,21 +212,23 @@ func _on_hitbox_gui_input(event: InputEvent):
 			tween.tween_property(_inner,"scale",Vector2(1.1, 1.1),0.1);
 		else:
 			if is_dragging:
+				is_dragging=0;
 				var pos=get_global_mouse_position();
 				var hand_container=get_parent();
 				if hand_container && hand_container.has_method("try_play_card"):
 					hand_container.try_play_card(self,pos);
 				drag_ended.emit(self,pos);
-				is_dragging=0;
 	if (event is InputEventMouseButton) && (event.button_index==MOUSE_BUTTON_RIGHT):
 		if event.pressed:
 			var hand_container=get_parent();
 			if hand_container && hand_container.has_method("request_color_card"):
 				hand_container.request_color_card(self);
+@warning_ignore("unused_parameter")
 func _process(delta: float):
 	if is_dragging:
-		global_position=get_global_mouse_position()-(size/2);   # 卡牌跟随鼠标
-		drag_moved.emit(self,get_global_mouse_position());
+		if !card_data.needs_target:
+			global_position=get_global_mouse_position()-(size/2);   # 卡牌跟随鼠标
+		drag_moved.emit(self, get_global_mouse_position())	
 # 弃牌动画
 # 弃牌后子节点先销毁，需要单独动画
 func play_discard_animation() -> void:
@@ -234,3 +238,45 @@ func play_discard_animation() -> void:
 	tween.tween_property(self,"global_position",end_pos,0.2);
 	tween.parallel().tween_property(self, "modulate",Color(1,1,1,0),0.2);
 	tween.tween_callback(queue_free);
+# 创建引导线
+func _create_aim_line ():
+	if _aim_line:
+		return ;
+	_aim_line=Line2D.new();
+	_aim_line.width=3.0;
+	_aim_line.default_color = Color.WHITE
+	_aim_line.antialiased=1;
+	# 让 Line2D 显示在所有内容之上
+	_aim_line.z_index=10;
+	add_child(_aim_line);
+# CardUI.gd - 替换 _update_aim_line
+
+func _update_aim_line(is_valid: bool=0):
+	if !_aim_line:
+		return
+	# 起点：卡牌中心
+	var start=Vector2(BASE_WIDTH/2,BASE_HEIGHT/2);
+	# 终点：鼠标位置
+	var end=get_local_mouse_position();
+	# 控制点：起点和终点的中点偏上
+	var control=start.lerp(end,0.5)+Vector2(0,-120);
+	# 线性插值
+	var points = _calculate_bezier_points(start,control,end,20);
+	_aim_line.points = points
+	_aim_line.default_color = Color.GREEN if is_valid else Color.RED
+func _calculate_bezier_points (p0: Vector2,p1: Vector2,p2: Vector2,segments: int=20) -> Array:
+	var points: Array=[];
+	for i in range(segments+1):
+		var t=float(i)/float(segments);
+		var q0=p0.lerp(p1,t);
+		var q1=p1.lerp(p2,t);
+		var point=q0.lerp(q1,t);
+		points.append(point);
+	return points;
+# lerp 线性插值，就是找点
+func _clear_aim_line ():
+	if _aim_line:
+		_aim_line.queue_free();
+		_aim_line=null;
+	_aim_target=null;
+	

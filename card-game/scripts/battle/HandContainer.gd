@@ -273,22 +273,33 @@ func _get_hand_area () -> Rect2:
 	var t=20.0;  # margin
 	return Rect2(min_x-t,min_y-t,max_x-min_x+t*2,max_y-min_y+t*2);
 @warning_ignore("unused_parameter")
+# HandContainer.gd - 替换 try_play_card
+
 func try_play_card(card: BattleCardUI, mouse_pos: Vector2):
-	var local_mouse=get_local_mouse_position();
-	var hand_area=_get_hand_area();
+	var local_mouse=get_local_mouse_position()
+	var hand_area=_get_hand_area()
 	if hand_area.has_point(local_mouse):
-		_cancel_play(card);
-		return;
-	var bm=_get_battle_manager();
+		_cancel_play(card)
+		return
+	var bm=_get_battle_manager()
 	if bm==null:
-		return ;
+		return;
+	# 能量检查
 	var reqs=card.card_data.energy_re;
 	if !reqs.is_empty():
 		if !bm.consume_energy(reqs):
 			_cancel_play(card);
-			return	;
-	var target=Vector2(930,240);
-	play_card(card, target);
+			return;
+	var target: Enemy=null;
+	if card.card_data.needs_target:
+		target=_get_target_at_mouse(mouse_pos)
+		if target==null:
+			# 没有目标，取消打出
+			_cancel_play(card);
+			return
+	# 执行打出
+	var target_pos = target.global_position if target else Vector2(930,240);
+	play_card(card,target_pos);
 func _cancel_play(card: BattleCardUI):
 	card.set_interactive(1);
 	var index=hands.find(card);
@@ -308,18 +319,29 @@ func _cancel_play(card: BattleCardUI):
 func _on_card_drag_started(card: BattleCardUI, mouse_pos: Vector2):
 	drag_active=1;
 	drag_card=card;
+	if card.card_data.needs_target:
+		card._create_aim_line();
 	_update_drag_float(mouse_pos);
 @warning_ignore("unused_parameter")
 func _on_card_drag_moved(card: BattleCardUI, mouse_pos: Vector2):
 	if drag_active:
-		_update_drag_float(mouse_pos)
+		_update_drag_float(mouse_pos);
+		if card.card_data.needs_target:
+			var targ=_get_target_at_mouse(mouse_pos);
+			var is_valid=(targ!=null);
+			card._update_aim_line(is_valid);
+			_highlight_target(targ);
 @warning_ignore("unused_parameter")
 func _on_card_drag_ended(card: BattleCardUI, mouse_pos: Vector2):
 	drag_active=0;
 	drag_card=null;
+	card._clear_aim_line();
+	_highlight_target(null);
 	_update_float_from_hover();
 @warning_ignore("unused_parameter")
 func _update_drag_float (pos: Vector2):
+	if drag_active && drag_card && drag_card.card_data.needs_target:
+		return ;5
 	var local_mouse=get_local_mouse_position();
 	var hand_area=_get_hand_area();
 	if hand_area.has_point(local_mouse):
@@ -328,6 +350,29 @@ func _update_drag_float (pos: Vector2):
 	else:
 		if current_y_offset!=0.0:
 			_move_cards(0.0);
+# 获取鼠标下的敌人目标
+func _get_target_at_mouse(mouse_pos: Vector2) -> Enemy:
+	var bm=_get_battle_manager();
+	if !bm:
+		return null;
+	var global_mouse=get_global_mouse_position()
+	for enemy in bm.enemies:
+		if enemy.is_dead():
+			continue;
+		# 距离检测：敌人中心点半径40像素（约等于碰撞体大小的一半）
+		if global_mouse.distance_to(enemy.global_position)<40:
+			return enemy;
+	return null;
+# 高亮/取消高亮目标
+func _highlight_target(target: Enemy):
+	# 先清除所有敌人高亮
+	var bm=_get_battle_manager();
+	if !bm:
+		return;
+	for enemy in bm.enemies:
+		enemy.modulate=Color.WHITE
+		if enemy==target:
+			enemy.modulate=Color(1.5, 1.5, 0.5);  # 亮黄色高亮
 func _update_float_from_hover ():
 	if hover_count>0:
 		_move_cards(HOVER_UP_OFFSET);
