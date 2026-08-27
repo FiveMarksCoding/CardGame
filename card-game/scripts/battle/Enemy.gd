@@ -126,23 +126,24 @@ func _on_mouse_entered():
 	modulate=Color(1.1, 1.1, 1.1);
 func _on_mouse_exited():
 	modulate=Color.WHITE;
-# ============================================================
-# 公共接口
-# ============================================================
 func _update_health_display():
 	if hp_bar:
 		hp_bar.value=data.current_hp;
+		var hp_text=hp_bar.get_node("HpText");
+		if hp_text:
+			hp_text.text="%d/%d"%[data.current_hp,data.max_hp];
 func refresh_intents():
 	_update_intents();
 func take_damage (amount: int):
-	data.current_health-=amount;
-	if data.current_health<0:
-		data.current_health=0;
+	data.current_hp-=amount;
+	if data.current_hp<0:
+		data.current_hp=0;
 	_update_health_display();
 	# 闪红反馈
 	modulate=Color.RED;
 	await get_tree().create_timer(0.1).timeout;
 	modulate=Color.WHITE;
+# 接口
 func is_dead () -> bool:
 	return data.current_hp<=0;
 func get_intent_count () -> int:

@@ -184,8 +184,8 @@ func _process(delta):
 			_move_cards(0.0);
 # 打牌
 # HandContainer.gd - 修改 play_card
-func play_card (card: BattleCardUI,target: Vector2):
-	card.set_interactive(false)
+func play_card (card: BattleCardUI,target: Vector2,enemy: Enemy=null):
+	card.set_interactive(0);
 	card.select_card();
 	var index=hands.find(card)
 	if index!=-1:
@@ -198,9 +198,23 @@ func play_card (card: BattleCardUI,target: Vector2):
 	_arrange_cards();
 	_apply_card_pos();
 	card.fly_to(target, 0.4, func():
+		_execute_card_effect(card.card_data,enemy);
 		_card_hold_awit(card);
 	)
-	
+func _execute_card_effect (card_data: CardData,target: Enemy):
+	var bm=_get_battle_manager();
+	if bm==null:
+		return ;
+	# 伤害
+	if card_data.damage > 0 && target:
+		target.take_damage(card_data.damage)
+		print("%s 对 %s 造成 %d 点伤害" % [card_data.card_name, target.data.name, card_data.damage])
+
+	# 格挡
+	if card_data.block > 0:
+		bm.player_block += card_data.block
+		bm._update_player_ui()
+		print("获得 %d 点格挡" % card_data.block)
 # 打出后悬停，之后接别的
 func _card_hold_awit (card: BattleCardUI):
 	var tween=create_tween();
@@ -300,7 +314,7 @@ func try_play_card(card: BattleCardUI, mouse_pos: Vector2):
 			return;
 	# 执行打出
 	var target_pos=Vector2(930,240);
-	play_card(card,target_pos);
+	play_card(card,target_pos,target);
 func _cancel_play(card: BattleCardUI):
 	card.set_interactive(1);
 	var index=hands.find(card);
