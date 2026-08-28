@@ -12,14 +12,23 @@ var rewards: Array[RewardData]=[];
 var state: State=State.PENDING;
 # 卡牌奖励数量
 var card_reward_count: int=3;
+# 奖励卡牌组
+var card_groups: Array = []  # 存储每组卡牌的索引范围
+
 # 生成奖励
-func generate_rewards(battle_type: String) -> void:
+func generate_rewards (battle_type: String) -> void:
 	rewards.clear();
 	state=State.PENDING;
-	# 卡牌奖励
-	var card_ids=CardPool.get_random_cards(card_reward_count);
-	for id in card_ids:
-		rewards.append(RewardData.create_card(id));
+	card_groups.clear();
+	# 卡牌奖励（多组三选一）
+	var group_count=1 if battle_type!="ELITE" else 2;  # 目前一组，以后可配置
+	for g in range(group_count):
+		var group_start=rewards.size();
+		var card_ids=CardPool.get_random_cards(card_reward_count);
+		for i in card_ids:
+			rewards.append(RewardData.create_card(i));
+		var group_end=rewards.size()-1;
+		card_groups.append({"start":group_start,"end":group_end});
 	# 金币奖励
 	var g=0;
 	match battle_type:
@@ -81,3 +90,9 @@ func has_unclaimed() -> bool:
 		if not r.is_claimed:
 			return true
 	return false
+# 是否还有未领取的卡牌奖励
+func has_unclaimed_cards() -> bool:
+	for r in rewards:
+		if r.type == RewardData.Type.CARD and not r.is_claimed:
+			return 1;
+	return 0;

@@ -43,6 +43,12 @@ func _ready ():
 	
 	_create_test_enemies();
 	start_player_turn();
+	
+	var logic = BattleRewardLogic.new()
+	logic.generate_rewards("normal")
+	var ui = BattleRewardUI.new()
+	add_child(ui)
+	ui.show_rewards(logic)
 func shuffle_pile(pile: Array[CardData]) -> void:
 	pile.shuffle();
 func draw_hands (n: int=draw_count):

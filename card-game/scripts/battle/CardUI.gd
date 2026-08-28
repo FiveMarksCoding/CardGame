@@ -22,8 +22,9 @@ signal hover_exited(card: BattleCardUI);
 # 整体上浮信号
 signal hand_hover_entered();
 signal hand_hover_exited();
+#选牌界面信号
+signal card_clicked(card: BattleCardUI);
 # 拖拽
-# CardUI.gd - 在信号区域添加
 signal drag_started(card: BattleCardUI,mouse_pos: Vector2);
 signal drag_ended(card: BattleCardUI,mouse_pos: Vector2);
 signal drag_moved(card: BattleCardUI,mouse_pos: Vector2);
@@ -205,6 +206,7 @@ func fly_to (pos1:Vector2,time: float=0.3,callback: Callable=Callable()):
 func _on_hitbox_gui_input(event: InputEvent):
 	if (event is InputEventMouseButton) && (event.button_index == MOUSE_BUTTON_LEFT):
 		if event.pressed:
+			card_clicked.emit(self);
 			is_dragging=1;
 			drag_start=get_global_mouse_position();
 			drag_started.emit(self,drag_start);
