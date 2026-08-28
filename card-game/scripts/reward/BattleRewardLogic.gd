@@ -15,32 +15,28 @@ var card_reward_count: int=3;
 # 奖励卡牌组
 var card_groups: Array = []  # 存储每组卡牌的索引范围
 
-# 生成奖励
-func generate_rewards (battle_type: String) -> void:
-	rewards.clear();
+# BattleRewardLogic.gd - 删除 generate_rewards() 函数
+# 新增 initialize() 函数
+
+func initialize (rewards_array: Array[RewardData]):
+	rewards=rewards_array;
 	state=State.PENDING;
+	_build_card_groups()  # 自动构建组索引
+func _build_card_groups ():
 	card_groups.clear();
-	# 卡牌奖励（多组三选一）
-	var group_count=1 if battle_type!="ELITE" else 2;  # 目前一组，以后可配置
-	for g in range(group_count):
-		var group_start=rewards.size();
-		var card_ids=CardPool.get_random_cards(card_reward_count);
-		for i in card_ids:
-			rewards.append(RewardData.create_card(i));
-		var group_end=rewards.size()-1;
-		card_groups.append({"start":group_start,"end":group_end});
-	# 金币奖励
-	var g=0;
-	match battle_type:
-		"normal":
-			g=randi_range(50, 70);
-		"elite":
-			g=randi_range(100, 120);
-		"boss":
-			g=randi_range(150, 200);
-		_:
-			g=50;
-	rewards.append(RewardData.create_golds(g));
+	var group_start=-1;
+	for i in range(rewards.size()):
+		var r=rewards[i];
+		if r.type==RewardData.Type.CARD:
+			if group_start==-1:
+				group_start=i;
+		else:
+			if group_start!=-1:
+				card_groups.append({"start":group_start,"end":i-1});
+				group_start=-1
+	# 如果最后一批是卡牌
+	if group_start!=-1:
+		card_groups.append({"start": group_start, "end": rewards.size() - 1})
 # 领取单个奖励
 func claim_reward(index: int) -> bool:
 	if (index<0) || (index>=rewards.size()):

@@ -7,9 +7,12 @@ var sprite: Sprite2D=null;
 var hp_bar: ProgressBar=null;
 var intent_container: Control=null;
 var name_label: Label=null;
-
 var intent_items: Array[Control]=[];
+# 信号
 signal intent_selected(enemy: Enemy,index: int);
+signal died(enemy: Enemy);
+# 意图组缓存
+var _cached_intents: Array=[];
 
 func _ready():
 	# hitbox;
@@ -21,7 +24,7 @@ func _ready():
 	# 鼠标检测
 	mouse_entered.connect(_on_mouse_entered);
 	mouse_exited.connect(_on_mouse_exited);
-func setup(enemy_data: EnemyData):
+func setup (enemy_data: EnemyData):
 	data=enemy_data;
 	_build_visuals();
 	_update_health_display();
@@ -67,21 +70,6 @@ func _build_visuals():
 	intent_container.position=Vector2(70,-80);
 	intent_container.size=Vector2(120,160);
 	add_child(intent_container);
-func _update_intents ():
-	for i in intent_container.get_children():
-		i.queue_free();
-	intent_items.clear();
-	if data == null:
-		return ;
-	var intents=data.get_intent_group();
-	var y_offset=0;
-	for i in range(intents.size()):
-		var intent_data = intents[i]
-		var item=_create_intent_item(intent_data,i);
-		item.position = Vector2(0, y_offset);
-		intent_container.add_child(item);
-		intent_items.append(item);
-		y_offset+=30;  
 func _create_intent_item (intent: Intent, index: int) -> Control:
 	var panel=Panel.new();
 	panel.size=Vector2(100,26);
@@ -132,8 +120,6 @@ func _update_health_display():
 		var hp_text=hp_bar.get_node("HpText");
 		if hp_text:
 			hp_text.text="%d/%d"%[data.current_hp,data.max_hp];
-func refresh_intents():
-	_update_intents();
 func take_damage (amount: int):
 	data.current_hp-=amount;
 	if data.current_hp<0:
@@ -143,6 +129,8 @@ func take_damage (amount: int):
 	modulate=Color.RED;
 	await get_tree().create_timer(0.1).timeout;
 	modulate=Color.WHITE;
+	if data.current_hp<=0:
+		died.emit(self);
 # 接口
 func is_dead () -> bool:
 	return data.current_hp<=0;
@@ -163,15 +151,34 @@ func remove_intent (index: int):
 	if index>=0 && index<intents.size():
 		intents.remove_at(index);
 		_update_intents();
-func execute_intents () -> Array:
-	# 返回值记录本次执行产生的效果（用于 BattleManager 汇总）
-	var results: Array=[];
-	var intents=data.get_intent_group();
-	for i in intents:
-		var result=execute_one(i);
-		results.append(result);
-	_update_intents();
-	return results;
+func _update_intents():
+	# 如果缓存为空，生成新意图
+	if _cached_intents.is_empty():
+		_cached_intents = data.get_intent_group()
+	# 用缓存更新 UI
+	_update_intents_with_data(_cached_intents)
+func execute_intents() -> Array:
+	var results: Array = []
+	
+	# 如果缓存为空，生成新意图（防御性编程）
+	if _cached_intents.is_empty():
+		_cached_intents = data.get_intent_group()
+	
+	var intents = _cached_intents
+	print("当前执行的意图组：", intents)
+	
+	# 更新 UI（确保显示与执行一致）
+	_update_intents_with_data(intents)
+	
+	# 执行意图
+	for intent in intents:
+		var result = execute_one(intent)
+		results.append(result)
+	
+	# 执行完后清空缓存，让下一回合重新生成
+	_cached_intents.clear()
+	
+	return results
 func execute_one (intent: Intent) -> Dictionary:
 	var result = {
 		"type": intent.type,
@@ -206,3 +213,15 @@ func execute_one (intent: Intent) -> Dictionary:
 			print("%s 执行未知意图.这啥玩意" % data.name)
 			result["success"]=0;
 	return result;
+func _update_intents_with_data (intents: Array):
+	for child in intent_container.get_children():
+		child.queue_free();
+	intent_items.clear()
+	var y_offset=0;
+	for i in range(intents.size()):
+		var intent_data=intents[i];
+		var item=_create_intent_item(intent_data,i);
+		item.position=Vector2(0,y_offset);
+		intent_container.add_child(item);
+		intent_items.append(item);
+		y_offset+=30;

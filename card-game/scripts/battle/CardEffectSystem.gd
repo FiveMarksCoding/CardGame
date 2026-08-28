@@ -8,5 +8,5 @@ static func execute_card_effect (card_data: CardData,target: Enemy,battle_manage
 	# 格挡
 	if card_data.block > 0:
 		battle_manager.player_block+=card_data.block;
-		battle_manager._update_player_ui();
+		battle_manager.player_block_changed.emit(battle_manager.player_block);
 		#print("获得 %d 点格挡" % card_data.block)

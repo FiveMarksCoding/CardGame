@@ -12,9 +12,8 @@ var _is_sub_ui_open: bool = false
 var _main_panel: Panel = null
 var _main_container: VBoxContainer = null
 var _card_selector_btn: Button = null
-var _gold_btn: Button = null
-var _defer_btn: Button = null
-
+var _gold_btn: Button=null;
+var go_to_map_btn: Button=null;
 # 子界面节点
 var _sub_panel: Panel = null
 var _sub_container: VBoxContainer = null
@@ -75,13 +74,17 @@ func _build_main_ui() -> void:
 	_gold_btn.text = "金币 +0"
 	_gold_btn.size = Vector2(300, 70)
 	_gold_btn.pressed.connect(_on_gold_pressed)
-	_main_container.add_child(_gold_btn)
-	# 稍后按钮
-	_defer_btn = Button.new()
-	_defer_btn.text = "稍后"
-	#_defer_btn.custom_minimum_size=Vector2(120,60);
-	_defer_btn.pressed.connect(_on_defer_pressed)
-	_main_container.add_child(_defer_btn)
+	_main_container.add_child(_gold_btn);
+	# 前往地图 gogogo
+	var go_to_map_btn = Button.new()
+	go_to_map_btn.text = "前往地图"
+	go_to_map_btn.custom_minimum_size = Vector2(140, 50)
+	go_to_map_btn.position = Vector2(
+	_main_panel.size.x-160,
+	_main_panel.size.y-70
+	);
+	go_to_map_btn.pressed.connect(_on_go_to_map_pressed);
+	_main_panel.add_child(go_to_map_btn)
 func _build_sub_ui() -> void:
 	# 子面板（与主面板重叠）
 	_sub_panel = Panel.new()
@@ -244,12 +247,14 @@ func _on_gold_pressed ():
 		_on_all_claimed();
 	else:
 		_update_main_ui();
-func _on_defer_pressed() -> void:
-	if _logic:
-		_logic.defer();
-	visible=0;
-	reward_deferred.emit();
-
+# 点击按钮前往地图
+func _on_go_to_map_pressed() -> void:
+	# 暂时只关闭界面，不实现跳转
+	# 等地图系统接入后，再连接实际跳转逻辑
+	visible = false
+	# 通知上层（BattleManager）奖励界面已关闭
+	reward_completed.emit()  # 复用这个信号，表示“关闭界面”
+# 废案
 func _on_all_claimed() -> void:
 	visible=0;
 	reward_completed.emit();

@@ -1,32 +1,32 @@
 extends Node
 class_name BattleManager
 # 牌堆：抽牌堆、弃牌堆、消耗堆
-var is_player_turn: bool=0;
-var turn_counts: int=0;
 var draw: Array[CardData]=[];
 var discard: Array[CardData]=[]
 var consumed: Array[CardData]=[];
 var hand: Array[CardData]=[];
+# 基本信息
+var is_player_turn: bool=0;
+var turn_counts: int=0;
 var enemies: Array=[];
 var player_health: int=100;
 var player_max_health: int=100;
 var player_block: int=0;
 var hand_container: HandContainer=null;
-
 var draw_count: int=5;
 var hand_limit: int=10;
-
+var battle_over: bool=0; # 赢了还是死了？不知道
 # Energy
-var energy_q: Array = []  # 每个元素是 String，表示颜色类型
+var energy_q: Array=[];  # 每个元素是 String，表示颜色类型
 # 能量颜色常量（方便复用）
 const ENERGY_NEUTRAL="neutral";
-const ENERGY_RED = "red"
-const ENERGY_BLUE = "blue"
-const ENERGY_GREEN = "green"
-const ENERGY_PURPLE = "purple"
-const ENERGY_YELLOW = "yellow"
+const ENERGY_RED="red";
+const ENERGY_BLUE="blue";
+const ENERGY_GREEN="green";
+const ENERGY_PURPLE="purple";
+const ENERGY_YELLOW="yellow";
+# 信号
 signal energy_changed();
-
 signal player_health_changed(new_health: int,max_health: int);
 signal player_block_changed(new_block: int);
 signal turn_started(turn_count: int);
@@ -35,7 +35,7 @@ func _ready ():
 	print("BattleManager 已加载");
 	hand_container=get_parent().get_node("HandContainer");
 	if !hand_container:
-		push_error("找不到 HandContainer！")
+		push_error("找不到 HandContainer！");
 	var copydeck=GameState.player_deck.duplicate();
 	draw=copydeck;
 	print("抽牌堆初始化完成，共 %d 张牌" % draw.size());
@@ -43,12 +43,6 @@ func _ready ():
 	
 	_create_test_enemies();
 	start_player_turn();
-	
-	var logic = BattleRewardLogic.new()
-	logic.generate_rewards("normal")
-	var ui = BattleRewardUI.new()
-	add_child(ui)
-	ui.show_rewards(logic)
 func shuffle_pile(pile: Array[CardData]) -> void:
 	pile.shuffle();
 func draw_hands (n: int=draw_count):
@@ -90,11 +84,11 @@ func _create_test_enemies ():
 	#type value times
 	var intent_pool=[
 		[
-			Intent.new(Intent.Type.ATTACK,6,1),
+			Intent.new(Intent.Type.ATTACK,5,1),
 			Intent.new(Intent.Type.DEFEND,4,1),
 		],
 		[
-			Intent.new(Intent.Type.ATTACK,8,2),
+			Intent.new(Intent.Type.ATTACK,6,2),
 		],
 		[
 			Intent.new(Intent.Type.BUFF,2,1),
@@ -105,8 +99,10 @@ func _create_test_enemies ():
 	var enemy=Enemy.new();
 	enemy.setup(enemy_data);
 	enemy.position=Vector2(400,300);
-	enemy.scale=Vector2(1.5, 1.5);
+	enemy.scale=Vector2(1.5,1.5);
 	get_parent().add_child.call_deferred(enemy);
+	#enemy.setup(enemy_data);
+	enemy.died.connect(_on_enemy_died);
 	enemies.append(enemy);
 	print("Enemy created");
 func start_player_turn():
@@ -123,7 +119,7 @@ func add_neutral_energy (n: int):
 		energy_q.append(ENERGY_NEUTRAL);
 	energy_changed.emit();
 func end_player_turn():
-	if !is_player_turn:
+	if !is_player_turn || battle_over:
 		return ;
 	is_player_turn=0;
 	print("=== 玩家回合结束 ===");
@@ -141,7 +137,9 @@ func execute_enemy_turn():
 		
 		print("%s 开始行动" % enemy.data.name)
 		var results = enemy.execute_intents()
-		
+		_check_victory()
+		if battle_over:
+			break;
 		for result in results:
 			if result.has("damage"):
 				var actual_damage = reduce_damage_with_block(result["damage"])
@@ -230,5 +228,35 @@ func try_color_card(card_data: CardData) -> bool:
 	energy_changed.emit();
 	#print("染色成功：%s → %s" % [card_data.card_name, card_data.card_color])
 	return 1;
-	
-	
+# 检测胜利
+func _check_victory () -> void:
+	if battle_over:
+		return;
+	var all_dead=1;
+	for enemy in enemies:
+		if !enemy.is_dead():
+			all_dead=0;
+			break;
+	if all_dead:
+		battle_over=1;
+		_on_victory()
+func _on_victory ():
+	print("战斗胜利！")
+	# 调用奖励系统
+	var rewards = RewardGenerator.generate("normal");  # 暂时固定为 normal
+	var logic = BattleRewardLogic.new();
+	logic.initialize(rewards);
+	# 创建 UI 并显示
+	var ui=BattleRewardUI.new();
+	add_child(ui);
+	ui.show_rewards(logic);
+# 检查是否所有敌人都死亡
+func _on_enemy_died(_enemy: Enemy):
+	var all_dead = true
+	for e in enemies:
+		if not e.is_dead():
+			all_dead = false
+			break
+	if all_dead:
+		battle_over = true
+		_on_victory()
