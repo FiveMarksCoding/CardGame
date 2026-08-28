@@ -10,7 +10,7 @@ var type: Type;
 var card_id: String;       # 仅当 type == CARD 时有效
 var gold_amount: int;      # 仅当 type == GOLD 时有效
 var is_claimed: bool=0;
-static func create_cards (id: String) -> RewardData:
+static func create_card (id: String) -> RewardData:
 	var x=RewardData.new();
 	x.type=Type.CARD;
 	x.card_id=id;
