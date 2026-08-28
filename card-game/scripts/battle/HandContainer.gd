@@ -14,6 +14,7 @@ const SCATTER_OFFSET_RIGHT=90.0;     # 右撤退距离
 const MAX_ANGLE_DEG=15.0;   	# 最大倾斜角度（弧度）
 const EXIT_DELAY: float=0.5  # 延迟时间（秒）
 const HAND_MOVE_TIME=0.4  #打出牌后手牌排列速度
+const CES=preload("res://scripts/battle/CardEffectSystem.gd");  #Preload
 
 var hands: Array[BattleCardUI]=[];
 var base_positions: Array[Vector2]=[];  # 存储每张牌的基准位置
@@ -283,20 +284,12 @@ func play_card (card: BattleCardUI,target: Vector2,enemy: Enemy=null):
 		_execute_card_effect(card.card_data,enemy);
 		_card_hold_awit(card);
 	)
-# 应用卡牌具体效果(发送给 BattleManager.gd)
+# 应用卡牌具体效果(发送给 CardEffectSystem.gd,也就是CES)
 func _execute_card_effect (card_data: CardData,target: Enemy):
 	var bm=_get_battle_manager();
 	if bm==null:
 		return ;
-	# 伤害
-	if card_data.damage > 0 && target:
-		target.take_damage(card_data.damage)
-		print("%s 对 %s 造成 %d 点伤害" % [card_data.card_name, target.data.name, card_data.damage])
-	# 格挡
-	if card_data.block > 0:
-		bm.player_block += card_data.block
-		bm.player_block_changed.emit(bm.player_block);
-		print("获得 %d 点格挡" % card_data.block)
+	CES.execute_card_effect(card_data,target,bm);
 # 打出后右侧悬停动画
 func _card_hold_awit (card: BattleCardUI):
 	var tween=create_tween();

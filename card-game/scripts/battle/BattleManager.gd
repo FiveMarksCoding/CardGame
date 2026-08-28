@@ -32,6 +32,8 @@ signal player_block_changed(new_block: int);
 signal turn_started(turn_count: int);
 
 func _ready ():
+	var test_cards = CardPool.get_random_cards(3)
+	print("测试抽卡：", test_cards)
 	print("BattleManager 已加载");
 	hand_container=get_parent().get_node("HandContainer");
 	if !hand_container:
