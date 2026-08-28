@@ -165,6 +165,8 @@ func _show_sub_ui() -> void:
 		card_ui.custom_minimum_size=Vector2(120,160)
 		card_ui.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 		card_ui.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		card_ui.hover_entered.connect(_on_reward_card_hover);
+		card_ui.hover_exited.connect(_on_reward_card_unhover);
 		_card_container.add_child(card_ui);
 		if i<group.end:
 			var spacer=Control.new();
@@ -211,8 +213,23 @@ func _on_card_ui_clicked(card: BattleCardUI, index: int) -> void:
 		_on_all_claimed();
 	else:
 		_update_main_ui();
+# 奖励界面卡牌悬停放大
+func _on_reward_card_hover(card: BattleCardUI) -> void:
+	# 放大到 1.2 倍（配合外层 0.8 倍缩放，实际显示 1 倍）
+	var tween = create_tween()
+	tween.set_ease(Tween.EASE_OUT)
+	tween.set_trans(Tween.TRANS_QUINT)
+	tween.tween_property(card._inner,"scale",Vector2(1.2,1.2),0.1)
+# 奖励界面卡牌悬停取消
+func _on_reward_card_unhover(card: BattleCardUI) -> void:
+	var tween = create_tween()
+	tween.set_ease(Tween.EASE_OUT)
+	tween.set_trans(Tween.TRANS_QUINT)
+	tween.tween_property(card._inner, "scale", Vector2(1.0, 1.0), 0.1)
+# 跳过选牌
 func _on_skip_pressed ():
 	_hide_sub_ui();
+# 领取金币
 func _on_gold_pressed ():
 	if !_logic:
 		return
