@@ -19,7 +19,7 @@ func generate(x: MapGenerationConfig) -> MapData:
 			var node=MapData.MapNode.new(nd.id,nd.node_type,pos);
 			if (i==0) && (j==0):
 				node.unlocked=1
-				node.completed=1;
+				node.completed=0;
 			map.add_node(node);
 	# 根据路径建立连接
 	_build_connections_from_paths(paths, map);
