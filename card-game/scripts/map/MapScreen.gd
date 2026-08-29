@@ -11,16 +11,20 @@ const DRAG_THRESHOLD: float=5.0;
 #TEST
 var max_x: int=300;
 var min_x: int=-300;
-
 func _ready():
-	map_container=Control.new();
-	add_child(map_container);
+	map_container = Control.new()
+	add_child(map_container)
 	
-	map_data = MapData.new();
-	map_data.generate_test_map();
+	var config = MapGenerationConfig.new(8, false)
+	config.min_jump_nodes = 2
+	config.max_jump_nodes = 2
+	config.min_nodes_per_row = 3
+	config.max_nodes_per_row = 5
 	
-	draw_map();
-
+	var gen = StandardMapGenerator.new()
+	map_data = gen.generate(config)
+	
+	draw_map()
 func draw_map ():
 	for i in map_container.get_children():
 		i.queue_free();
@@ -38,8 +42,6 @@ func draw_map ():
 			if node.completed && next_node.unlocked:
 				line.default_color=Color.GOLD;
 			map_container.add_child(line);
-			
-			
 	for id in map_data.nodes:
 		var node: MapData.MapNode = map_data.nodes[id];
 		# 这个 node 是属于 MapData 类下的一个 MapNode
@@ -49,14 +51,24 @@ func draw_map ():
 		btn.position = node.position-(btn.size/2);
 		var color = StyleBoxFlat.new();
 		match node.node_type:
-			MapData.NodeType.BATTLE:
-				color.bg_color=Color.GREEN;
-			MapData.NodeType.ELITE:
-				color.bg_color=Color.PURPLE;
-			MapData.NodeType.BOSS:
-				color.bg_color=Color.RED;
+			0:  # START
+				color.bg_color = Color.GRAY
+			1:  # BATTLE
+				color.bg_color = Color.GRAY
+			2:  # ELITE
+				color.bg_color = Color.PURPLE
+			3:  # SHOP
+				color.bg_color = Color.YELLOW
+			4:  # REST
+				color.bg_color = Color.RED
+			5:  # EVENT
+				color.bg_color = Color.YELLOW
+			6:  # BOSS
+				color.bg_color = Color.BLACK
+			7:  # JUMP
+				color.bg_color = Color.GRAY
 			_:
-				color.bg_color=Color.GRAY;
+				color.bg_color = Color.GRAY
 		if node.completed:
 			color.bg_color=color.bg_color*0.3;
 			btn.disabled=1;
@@ -65,8 +77,8 @@ func draw_map ():
 		else:
 			color.bg_color=color.bg_color*0.6;
 			btn.disabled=1;
-		
-		btn.add_theme_stylebox_override("normal",color);
+		btn.modulate = color.bg_color
+		btn.add_theme_color_override("font_color", Color.WHITE)  # 确保文字可见
 		btn.text = node.id;
 		btn.pressed.connect(_on_node_clicked.bind(id));
 		map_container.add_child(btn);
