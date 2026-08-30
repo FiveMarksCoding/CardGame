@@ -25,8 +25,9 @@ func generate(x: MapGenerationConfig) -> MapData:
 	return map;
 # 路径生成
 func _generate_paths() -> Array:
-	# 路径数量：4
-	var path_count=4;
+	var base_path_count=4;
+	var multiplier=config.custom_rules.get("path_multiplier",1.0);
+	var path_count=max(2,int(round(base_path_count*multiplier)));
 	var paths=[];
 	var used_cols_per_row={};# 每行已用的列
 	var start_cols = range(config.max_nodes_per_row)  # [0, 1, 2, 3, 4]

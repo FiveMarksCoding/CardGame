@@ -20,6 +20,15 @@ var event_chance: float=0.25;
 # 特殊规则
 var custom_rules: Dictionary={};
 
-func _init(p_row_count: int=8,p_has_boss: bool=0):
+func _init (p_row_count: int=8,p_has_boss: bool=0):
 	row_count=p_row_count;
 	has_boss=p_has_boss;
+func apply_special_rule ():
+	var rule = custom_rules.get("special_rule", "")
+	match rule:
+		"path_reduced_rest_boost":
+			# 路径减少50%：由 StandardMapGenerator 读取 path_multiplier
+			# 休息处×1.5：修改 rest_chance
+			rest_chance = custom_rules.get("rest_chance", rest_chance)
+		_:
+			pass
