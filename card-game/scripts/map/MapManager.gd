@@ -32,7 +32,9 @@ func _init_layer_configs():
 	layer_configs[3] = {
 		"row_count": 10,
 		"has_boss": true,
-		"special_rule": "diamond_shop_replacement"
+		"special_rule": "diamond_shop_replacement",
+		"diamond_layout": true,
+		"shop_replacement_rate": 0.5
 	}
 	# 第4层：13层，无BOSS，问号×2，商店×0.5
 	layer_configs[4] = {
@@ -81,7 +83,12 @@ func get_current_config() -> MapGenerationConfig:
 	# 读取 rest_chance（如果有）← 新增
 	if config_data.has("rest_chance"):
 		config.rest_chance = config_data["rest_chance"]
-	
+	# MapManager.gd - get_current_config() 中添加
+	if config_data.has("shop_replacement_rate"):
+		config.custom_rules["shop_replacement_rate"] = config_data["shop_replacement_rate"]
+	# 菱形布局
+	if config_data.has("diamond_layout"):
+		config.custom_rules["diamond_layout"] = config_data["diamond_layout"]
 	return config
 
 # 生成当前层地图
