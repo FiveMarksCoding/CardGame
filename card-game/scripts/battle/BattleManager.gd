@@ -125,8 +125,11 @@ func end_player_turn():
 	is_player_turn=0;
 	print("=== 玩家回合结束 ===");
 	# 执行敌人回合
-	discard_all();
+	# 为所有敌人生成新意图
+	for enemy in enemies:
+		enemy.generate_new_intents();
 	await execute_enemy_turn();
+	discard_all();
 	# 敌人回合结束后，开始新的玩家回合
 	start_player_turn()
 	

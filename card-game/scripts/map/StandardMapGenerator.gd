@@ -10,7 +10,6 @@ func generate(x: MapGenerationConfig) -> MapData:
 	var paths=_generate_paths();
 	# 根据路径创建节点
 	var rows=_build_nodes_from_paths(paths);
-	
 	# 将节点添加到 MapData
 	for i in range(rows.size()):
 		for j in range(rows[i].size()):

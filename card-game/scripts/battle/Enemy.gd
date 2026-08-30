@@ -28,7 +28,11 @@ func setup (enemy_data: EnemyData):
 	data=enemy_data;
 	_build_visuals();
 	_update_health_display();
-	_update_intents();
+	generate_new_intents();
+# 生成新回合的意图（从 EnemyData 获取）
+func generate_new_intents() -> void:
+	_cached_intents = data.get_intent_group()
+	_update_intents_display()
 func _build_visuals():
 	sprite=Sprite2D.new();
 	var rect_texture=PlaceholderTexture2D.new();
@@ -145,40 +149,35 @@ func replace_intent (index: int, new_intent: Intent):
 	var intents = data.get_intent_group();
 	if index >= 0 and index < intents.size():
 		intents[index]=new_intent;
-		_update_intents();
+		generate_new_intents();
 func remove_intent (index: int):
 	var intents=data.get_intent_group();
 	if index>=0 && index<intents.size():
 		intents.remove_at(index);
-		_update_intents();
-func _update_intents():
-	# 如果缓存为空，生成新意图
-	if _cached_intents.is_empty():
-		_cached_intents = data.get_intent_group()
-	# 用缓存更新 UI
-	_update_intents_with_data(_cached_intents)
-func execute_intents() -> Array:
-	var results: Array = []
-	
-	# 如果缓存为空，生成新意图（防御性编程）
-	if _cached_intents.is_empty():
-		_cached_intents = data.get_intent_group()
-	
-	var intents = _cached_intents
-	print("当前执行的意图组：", intents)
-	
-	# 更新 UI（确保显示与执行一致）
-	_update_intents_with_data(intents)
-	
-	# 执行意图
+		generate_new_intents();
+# 用当前缓存更新 UI
+func _update_intents_display():
+	for child in intent_container.get_children():
+		child.queue_free()
+	intent_items.clear()
+	var y_offset = 0
+	for i in range(_cached_intents.size()):
+		var intent_data = _cached_intents[i]
+		var item = _create_intent_item(intent_data, i)
+		item.position = Vector2(0, y_offset)
+		intent_container.add_child(item)
+		intent_items.append(item)
+		y_offset += 30
+func execute_intents () -> Array:
+	var results: Array=[];
+	var intents=_cached_intents;  # 使用当前缓存
 	for intent in intents:
-		var result = execute_one(intent)
-		results.append(result)
-	
-	# 执行完后清空缓存，让下一回合重新生成
-	_cached_intents.clear()
-	
-	return results
+		var result=execute_one(intent);
+		results.append(result);
+	# 执行后清空缓存并更新显示
+	_cached_intents.clear();
+	_update_intents_display();
+	return results;
 func execute_one (intent: Intent) -> Dictionary:
 	var result = {
 		"type": intent.type,
