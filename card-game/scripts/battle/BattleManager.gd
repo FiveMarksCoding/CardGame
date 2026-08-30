@@ -107,6 +107,8 @@ func _create_test_enemies ():
 	enemies.append(enemy);
 	print("Enemy created");
 func start_player_turn():
+	for enemy in enemies:
+		enemy.generate_new_intents();
 	turn_counts+=1;
 	add_neutral_energy(3);
 	# 抽牌（由 HandContainer 触发）
@@ -125,9 +127,6 @@ func end_player_turn():
 	is_player_turn=0;
 	print("=== 玩家回合结束 ===");
 	# 执行敌人回合
-	# 为所有敌人生成新意图
-	for enemy in enemies:
-		enemy.generate_new_intents();
 	await execute_enemy_turn();
 	discard_all();
 	# 敌人回合结束后，开始新的玩家回合

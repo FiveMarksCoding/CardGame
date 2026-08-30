@@ -138,23 +138,20 @@ func take_damage (amount: int):
 # 接口
 func is_dead () -> bool:
 	return data.current_hp<=0;
-func get_intent_count () -> int:
-	return intent_items.size();
-func get_intent_data (index: int) -> Intent:
-	var intents=data.get_intent_group();
-	if index >= 0 and index < intents.size():
-		return intents[index];
-	return null;
-func replace_intent (index: int, new_intent: Intent):
-	var intents = data.get_intent_group();
-	if index >= 0 and index < intents.size():
-		intents[index]=new_intent;
-		generate_new_intents();
-func remove_intent (index: int):
-	var intents=data.get_intent_group();
-	if index>=0 && index<intents.size():
-		intents.remove_at(index);
-		generate_new_intents();
+func get_intent_count() -> int:
+	return _cached_intents.size()
+func get_intent_data(index: int) -> Intent:
+	if index >= 0 and index < _cached_intents.size():
+		return _cached_intents[index]
+	return null
+func replace_intent(index: int, new_intent: Intent):
+	if index >= 0 and index < _cached_intents.size():
+		_cached_intents[index] = new_intent
+		_update_intents_display() 
+func remove_intent(index: int):
+	if index >= 0 and index < _cached_intents.size():
+		_cached_intents.remove_at(index)
+		_update_intents_display()
 # 用当前缓存更新 UI
 func _update_intents_display():
 	for child in intent_container.get_children():
@@ -212,15 +209,3 @@ func execute_one (intent: Intent) -> Dictionary:
 			print("%s 执行未知意图.这啥玩意" % data.name)
 			result["success"]=0;
 	return result;
-func _update_intents_with_data (intents: Array):
-	for child in intent_container.get_children():
-		child.queue_free();
-	intent_items.clear()
-	var y_offset=0;
-	for i in range(intents.size()):
-		var intent_data=intents[i];
-		var item=_create_intent_item(intent_data,i);
-		item.position=Vector2(0,y_offset);
-		intent_container.add_child(item);
-		intent_items.append(item);
-		y_offset+=30;
