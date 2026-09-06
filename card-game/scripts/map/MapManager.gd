@@ -18,7 +18,9 @@ func _init_layer_configs():
 	layer_configs[1] = {
 		"row_count": 8,
 		"has_boss": false,
-		"special_rule": null
+		"special_rule": null,
+		"min_nodes_per_row": 4,
+		"max_nodes_per_row": 4,
 	}
 	# 第2层：12层，无BOSS，路径减少50%，休息处×1.5
 	layer_configs[2] = {
@@ -26,7 +28,9 @@ func _init_layer_configs():
 		"has_boss": false,
 		"special_rule": "path_reduced_rest_boost",
 		"path_multiplier": 0.5,
-		"rest_chance": 0.15
+		"rest_chance": 0.15,
+		"min_nodes_per_row": 2,
+		"max_nodes_per_row": 2,
 	}
 	# 第3层：10层，有BOSS，菱形网络，50%战斗→商店
 	layer_configs[3] = {
@@ -34,7 +38,9 @@ func _init_layer_configs():
 		"has_boss": true,
 		"special_rule": "diamond_shop_replacement",
 		"diamond_layout": true,
-		"shop_replacement_rate": 0.5
+		"shop_replacement_rate": 0.5,
+		"min_nodes_per_row": 4,
+		"max_nodes_per_row": 5,
 	}
 	# 第4层：13层，无BOSS，问号×2，商店×0.5
 	layer_configs[4] = {
@@ -48,7 +54,9 @@ func _init_layer_configs():
 	layer_configs[5] = {
 		"row_count": 8,
 		"has_boss": true,
-		"special_rule": "circle_network"
+		#"special_rule": "circle_network",
+		#"circle_layout": true,
+		"max_nodes_per_row": 8    # 原来默认是5
 	}
 	# 第6层：15层，有BOSS，三条独立路径
 	layer_configs[6] = {
@@ -96,7 +104,13 @@ func get_current_config() -> MapGenerationConfig:
 		config.event_chance *= config_data["event_chance_multiplier"];
 	if config_data.has("shop_chance_multiplier"):
 		config.shop_chance *= config_data["shop_chance_multiplier"];
-	return config
+	if config_data.has("circle_layout"):
+		config.custom_rules["circle_layout"]=config_data["circle_layout"];
+	if config_data.has("min_nodes_per_row"):
+		config.min_nodes_per_row = config_data["min_nodes_per_row"];
+	if config_data.has("max_nodes_per_row"):
+		config.max_nodes_per_row = config_data["max_nodes_per_row"];
+	return config;
 
 # 生成当前层地图
 func generate_current_map() -> MapData:

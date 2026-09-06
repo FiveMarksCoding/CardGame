@@ -6,6 +6,17 @@ const ADD_PERCENT:float=0.4;
 
 func generate(_x:MapGenerationConfig)->MapData:
 	config=_x;
+	var rule=config.custom_rules.get("special_rule","");
+	
+	# 第六层：三条独立路径
+	if rule=="three_independent_paths":
+		return _generate_three_independent_paths_map(MapData.new());
+	
+	# 第七层：五节点固定结构（起点→商店→休息→BOSS→跳转）
+	if rule=="four_nodes":
+		return _generate_four_nodes_map(MapData.new());
+	
+	# 标准生成流程（其他层）
 	var map=MapData.new();
 	var paths=_generate_paths();
 	var rows=_build_nodes_from_paths(paths);
@@ -16,6 +27,7 @@ func generate(_x:MapGenerationConfig)->MapData:
 			var nd=rows[i][j];
 			var pos:Vector2;
 			var is_diamond=config.custom_rules.get("diamond_layout",false);
+			var is_circle=config.custom_rules.get("circle_layout",false);
 			if is_diamond:
 				var total_rows=rows.size();
 				var center_row=(total_rows-1)/2.0;
@@ -28,6 +40,20 @@ func generate(_x:MapGenerationConfig)->MapData:
 				var x=i*120+50;
 				var y=start_y+(j+1)*spacing;
 				pos=Vector2(x,y);
+			elif is_circle:
+				var total_rows=rows.size();
+				var center_x=400;
+				var center_y=300;
+				var max_radius=300;
+				var min_radius=60;
+				var row_ratio=float(i)/(total_rows-1) if total_rows>1 else 0;
+				var radius=min_radius+(max_radius-min_radius)*row_ratio;
+				var node_count=rows[i].size();
+				var angle_step=2*PI/node_count if node_count>0 else 0;
+				var angle=j*angle_step;
+				var x=center_x+radius*cos(angle);
+				var y=center_y+radius*sin(angle);
+				pos=Vector2(x,y);
 			else:
 				pos=Vector2(i*120+50,j*80+50);
 			var node=MapData.MapNode.new(nd.id,nd.node_type,pos);
@@ -35,12 +61,13 @@ func generate(_x:MapGenerationConfig)->MapData:
 				node.unlocked=true;
 				node.completed=false;
 			map.add_node(node);
+	
 	# 单独添加BOSS节点
 	if config.has_boss:
 		var boss_row=config.row_count-2;
 		var boss_id="%d_0"%boss_row;
 		var prev_row=boss_row-1;
-		var y_center=50;  # 默认值
+		var y_center=50;
 		if map.nodes.size()>0:
 			var y_sum=0;
 			var y_count=0;
@@ -63,17 +90,14 @@ func generate(_x:MapGenerationConfig)->MapData:
 	if config.has_jump:
 		var jump_row=config.row_count-1;
 		var jump_count=randi_range(config.min_jump_nodes,config.max_jump_nodes);
-		# 计算垂直居中位置
 		var center_y=50;
 		var prev_row=jump_row-1;
-		# 如果有BOSS，以BOSS的Y为中心
 		if config.has_boss:
 			var boss_row=config.row_count-2;
 			var boss_id="%d_0"%boss_row;
 			if map.nodes.has(boss_id):
 				center_y=map.nodes[boss_id].position.y;
 		else:
-			# 否则以前一行的平均Y为中心
 			var y_sum=0;
 			var y_count=0;
 			for id in map.nodes.keys():
@@ -85,7 +109,6 @@ func generate(_x:MapGenerationConfig)->MapData:
 					y_count+=1;
 			if y_count>0:
 				center_y=y_sum/y_count;
-		# 跳转节点垂直分散
 		var spacing=50;
 		var total_height=(jump_count-1)*spacing;
 		var start_y=center_y-total_height/2;
@@ -96,11 +119,9 @@ func generate(_x:MapGenerationConfig)->MapData:
 			jump_node.unlocked=false;
 			jump_node.completed=false;
 			map.add_node(jump_node);
+	
 	# 建立连接
 	_build_connections_from_paths(paths,map);
-	
-	# 补全孤立节点
-	_fix_isolated_nodes(map);
 	
 	# BOSS连接
 	if config.has_boss:
@@ -120,10 +141,156 @@ func generate(_x:MapGenerationConfig)->MapData:
 					if map.nodes.has(jump_id):
 						map.add_connection(boss_id,jump_id);
 	
+	_fix_isolated_nodes(map, paths);
+	
 	return map;
 
+# ============ 第六层：三条独立路径 ============
+func _generate_three_independent_paths_map(map:MapData)->MapData:
+	var path_count=3;
+	var row_count=config.row_count;
+	
+	var col_ranges=[
+		[0,1],
+		[2,3],
+		[4,5]
+	];
+	
+	var path_node_ids=[[], [], []];
+	
+	# 起点
+	var start_id="0_0";
+	var start_pos=Vector2(0*120+50, 80);
+	var start_node=MapData.MapNode.new(start_id, MapNodeData.NodeType.START, start_pos);
+	start_node.unlocked=true;
+	start_node.completed=false;
+	map.add_node(start_node);
+	
+	# 生成三条路径的节点（第1行到第12行）
+	for p in range(path_count):
+		var min_col=col_ranges[p][0];
+		var max_col=col_ranges[p][1];
+		var current_col=min_col + randi()%(max_col-min_col+1);
+		var node_ids=[];
+		
+		for row in range(1, row_count-2):
+			var col_range_size=max_col-min_col+1;
+			var col=min_col + randi()%col_range_size;
+			current_col=col;
+			var id="%d_%d"%[row, col];
+			var pos=Vector2(row*120+50, col*80+50);
+			var node_type=_pick_node_type(row, col);
+			var node=MapData.MapNode.new(id, node_type, pos);
+			node.unlocked=false;
+			node.completed=false;
+			map.add_node(node);
+			node_ids.append(id);
+		
+		path_node_ids[p]=node_ids;
+	
+	# BOSS居中
+	var prev_row=row_count-3;
+	var y_sum=0;
+	var y_count=0;
+	for id in map.nodes.keys():
+		var parts=id.split("_");
+		var row=int(parts[0]);
+		if row==prev_row:
+			var node=map.nodes[id];
+			y_sum+=node.position.y;
+			y_count+=1;
+	var boss_y=50;
+	if y_count>0:
+		boss_y=y_sum/y_count;
+	
+	var boss_row=row_count-2;
+	var boss_id="%d_0"%boss_row;
+	var boss_pos=Vector2(boss_row*120+50, boss_y);
+	var boss_node=MapData.MapNode.new(boss_id, MapNodeData.NodeType.BOSS, boss_pos);
+	boss_node.unlocked=false;
+	boss_node.completed=false;
+	map.add_node(boss_node);
+	
+	# 跳转（1个）
+	var jump_row=row_count-1;
+	var jump_id="%d_0"%jump_row;
+	var jump_pos=Vector2(jump_row*120+50, boss_y+50);
+	var jump_node=MapData.MapNode.new(jump_id, MapNodeData.NodeType.JUMP, jump_pos);
+	jump_node.unlocked=false;
+	jump_node.completed=false;
+	map.add_node(jump_node);
+	
+	# 连接
+	for p in range(path_count):
+		if path_node_ids[p].size()>0:
+			map.add_connection(start_id, path_node_ids[p][0]);
+	
+	for p in range(path_count):
+		for i in range(path_node_ids[p].size()-1):
+			map.add_connection(path_node_ids[p][i], path_node_ids[p][i+1]);
+	
+	for p in range(path_count):
+		if path_node_ids[p].size()>0:
+			var last_id=path_node_ids[p][path_node_ids[p].size()-1];
+			map.add_connection(last_id, boss_id);
+	
+	map.add_connection(boss_id, jump_id);
+	
+	return map;
+
+# ============ 第七层：五节点固定结构 ============
+func _generate_four_nodes_map(map:MapData)->MapData:
+	# 第0行：起点
+	var start_id="0_0";
+	var start_pos=Vector2(0*120+50, 200);
+	var start_node=MapData.MapNode.new(start_id, MapNodeData.NodeType.START, start_pos);
+	start_node.unlocked=true;
+	start_node.completed=false;
+	map.add_node(start_node);
+	
+	# 第1行：商店
+	var shop_id="1_0";
+	var shop_pos=Vector2(1*120+50, 200);
+	var shop_node=MapData.MapNode.new(shop_id, MapNodeData.NodeType.SHOP, shop_pos);
+	shop_node.unlocked=false;
+	shop_node.completed=false;
+	map.add_node(shop_node);
+	
+	# 第2行：休息处（火堆）
+	var rest_id="2_0";
+	var rest_pos=Vector2(2*120+50, 200);
+	var rest_node=MapData.MapNode.new(rest_id, MapNodeData.NodeType.REST, rest_pos);
+	rest_node.unlocked=false;
+	rest_node.completed=false;
+	map.add_node(rest_node);
+	
+	# 第3行：BOSS
+	var boss_id="3_0";
+	var boss_pos=Vector2(3*120+50, 200);
+	var boss_node=MapData.MapNode.new(boss_id, MapNodeData.NodeType.BOSS, boss_pos);
+	boss_node.unlocked=false;
+	boss_node.completed=false;
+	map.add_node(boss_node);
+	
+	# 第4行：跳转（1个）
+	var jump_id="4_0";
+	var jump_pos=Vector2(4*120+50, 200);
+	var jump_node=MapData.MapNode.new(jump_id, MapNodeData.NodeType.JUMP, jump_pos);
+	jump_node.unlocked=false;
+	jump_node.completed=false;
+	map.add_node(jump_node);
+	
+	# 连接
+	map.add_connection(start_id, shop_id);
+	map.add_connection(shop_id, rest_id);
+	map.add_connection(rest_id, boss_id);
+	map.add_connection(boss_id, jump_id);
+	
+	return map;
+
+# ============ 以下为通用函数 ============
 func _generate_paths()->Array:
-	var base_path_count=4;
+	var base_path_count=randi_range(config.min_nodes_per_row,config.max_nodes_per_row);
 	var multiplier=config.custom_rules.get("path_multiplier",1.0);
 	var path_count=max(2,int(round(base_path_count*multiplier)));
 	var paths=[];
@@ -146,7 +313,6 @@ func _generate_paths()->Array:
 				if !(step.col in used_cols_per_row[step.row]):
 					used_cols_per_row[step.row].append(step.col);
 	
-	# 确保第一行有起点
 	if paths.size()>0 and paths[0].size()>0:
 		paths[0][0]=MapNodeData.new("0_0",MapNodeData.NodeType.START,0,0);
 	
@@ -171,25 +337,22 @@ func _generate_single_path(used_cols_per_row:Dictionary,path_index:int,start_col
 			for c in range(min_col,max_col_available+1):
 				if !(c in available_cols):
 					available_cols.append(c);
-		var j=available_cols[randi()%available_cols.size()];
-		current_col=j;
-		var node_type=_pick_node_type(i,j);
-		var node=MapNodeData.new("%d_%d"%[i,j],node_type,i,j);
+		var col=available_cols[randi()%available_cols.size()];
+		current_col=col;
+		var node_type=_pick_node_type(i,col);
+		var node=MapNodeData.new("%d_%d"%[i,col],node_type,i,col);
 		path.append(node);
 	
 	return path;
 
 func _build_nodes_from_paths(paths:Array)->Array:
 	var rows=[];
-	
-	# 确定实际行数范围
 	var max_row=0;
 	for path in paths:
 		for step in path:
 			if step.row>max_row:
 				max_row=step.row;
 	
-	# 如果路径为空，创建默认行
 	if max_row==0:
 		max_row=config.row_count-3;
 		if max_row<1:
@@ -205,7 +368,6 @@ func _build_nodes_from_paths(paths:Array)->Array:
 					cols_used.append(step.col);
 		cols_used.sort();
 		
-		# 如果该行没有节点，补一个
 		if cols_used.is_empty():
 			var fallback_type=MapNodeData.NodeType.BATTLE;
 			if i==0:
@@ -230,14 +392,12 @@ func _build_nodes_from_paths(paths:Array)->Array:
 	return rows;
 
 func _build_connections_from_paths(paths:Array,map:MapData):
-	# 主干连接
 	for path in paths:
 		for i in range(path.size()-1):
 			var from_node=path[i];
 			var to_node=path[i+1];
 			map.add_connection(from_node.id,to_node.id);
 	
-	# 分支连接
 	var node_map={};
 	for id in map.nodes.keys():
 		var node=map.nodes[id];
@@ -269,7 +429,6 @@ func _build_connections_from_paths(paths:Array,map:MapData):
 				if connected_count>=2:
 					break;
 	
-	# 确保每行每个节点至少有一条出边（到下一行）和一条入边（从上一行）
 	_ensure_connectivity(map,node_map);
 
 func _ensure_connectivity(map:MapData,node_map:Dictionary):
@@ -284,7 +443,6 @@ func _ensure_connectivity(map:MapData,node_map:Dictionary):
 		var current_cols=current_row.keys();
 		var next_cols=next_row.keys();
 		
-		# 确保每个当前行节点至少有一条出边
 		for col in current_cols:
 			var from_id=current_row[col];
 			var has_outgoing=false;
@@ -294,7 +452,6 @@ func _ensure_connectivity(map:MapData,node_map:Dictionary):
 					has_outgoing=true;
 					break;
 			if !has_outgoing:
-				# 连接到下一行最近的节点
 				var nearest_col=next_cols[0];
 				for next_col in next_cols:
 					if abs(next_col-col)<abs(nearest_col-col):
@@ -302,7 +459,6 @@ func _ensure_connectivity(map:MapData,node_map:Dictionary):
 				var to_id=next_row[nearest_col];
 				map.add_connection(from_id,to_id);
 		
-		# 确保每个下一行节点至少有一条入边
 		for next_col in next_cols:
 			var to_id=next_row[next_col];
 			var has_incoming=false;
@@ -319,37 +475,31 @@ func _ensure_connectivity(map:MapData,node_map:Dictionary):
 				var from_id=current_row[nearest_col];
 				map.add_connection(from_id,to_id);
 
-func _fix_isolated_nodes(map:MapData):
-	# 检查每个节点是否有入边和出边
+func _fix_isolated_nodes(map:MapData, paths:Array=[]):
 	for id in map.nodes.keys():
 		var node=map.nodes[id];
 		var parts=id.split("_");
 		var row=int(parts[0]);
 		var col=int(parts[1]);
 		
-		# 起点不需要入边，终点不需要出边
 		if node.node_type==MapNodeData.NodeType.START:
 			continue;
 		if node.node_type==MapNodeData.NodeType.BOSS or node.node_type==MapNodeData.NodeType.JUMP:
 			continue;
 		
-		# 检查出边
 		var has_outgoing=false;
 		var outgoing=map.get_outgoing(id);
 		if outgoing.size()>0:
 			has_outgoing=true;
 		
-		# 检查入边
 		var has_incoming=false;
 		for other_id in map.nodes.keys():
 			if other_id!=id:
-				var other_node=map.nodes[other_id];
 				var other_outgoing=map.get_outgoing(other_id);
 				if id in other_outgoing:
 					has_incoming=true;
 					break;
 		
-		# 如果没有出边，连接到下一行
 		if !has_outgoing and row<config.row_count-1:
 			var next_row=row+1;
 			var target_id=null;
@@ -362,7 +512,6 @@ func _fix_isolated_nodes(map:MapData):
 			if target_id!=null:
 				map.add_connection(id,target_id);
 		
-		# 如果没有入边，从上一行连接过来
 		if !has_incoming and row>0:
 			var prev_row=row-1;
 			var source_id=null;

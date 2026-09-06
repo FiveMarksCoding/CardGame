@@ -134,4 +134,4 @@ func _input(event):
 			return
 		var delta = event.position.x - drag_start.x
 		var now_x = container_start + delta
-		map_container.position.x = clamp(now_x, -300, 300)
+		map_container.position.x = now_x
