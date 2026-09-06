@@ -35,7 +35,6 @@ func generate(_x:MapGenerationConfig)->MapData:
 				node.unlocked=true;
 				node.completed=false;
 			map.add_node(node);
-	
 	# 单独添加BOSS节点
 	if config.has_boss:
 		var boss_row=config.row_count-2;

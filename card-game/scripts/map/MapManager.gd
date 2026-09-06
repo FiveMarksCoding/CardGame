@@ -40,8 +40,10 @@ func _init_layer_configs():
 	layer_configs[4] = {
 		"row_count": 13,
 		"has_boss": false,
-		"special_rule": "event_boost_shop_reduced"
-	}
+		"special_rule": "event_boost_shop_reduced",
+		"event_chance_multiplier": 2.0,
+		"shop_chance_multiplier": 0.5
+	};
 	# 第5层：8层，有BOSS，圆形网络
 	layer_configs[5] = {
 		"row_count": 8,
@@ -89,6 +91,11 @@ func get_current_config() -> MapGenerationConfig:
 	# 菱形布局
 	if config_data.has("diamond_layout"):
 		config.custom_rules["diamond_layout"] = config_data["diamond_layout"]
+	# 读取 event_chance 和 shop_chance 的倍数
+	if config_data.has("event_chance_multiplier"):
+		config.event_chance *= config_data["event_chance_multiplier"];
+	if config_data.has("shop_chance_multiplier"):
+		config.shop_chance *= config_data["shop_chance_multiplier"];
 	return config
 
 # 生成当前层地图
