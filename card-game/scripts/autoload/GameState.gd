@@ -17,7 +17,6 @@ func create_new_deck() -> Array[CardData]:
 	deck.append(CardData.new("strike", "铁斩波", 1, "attack", 6, 6, true, "", "neutral", [["neutral"], ["neutral"]]))
 	deck.append(CardData.new("defend", "防御", 1, "skill", 0, 4, false, "", "neutral", [["neutral"]]))
 	deck.append(CardData.new("strike", "打击", 1, "attack", 5, 0, true, "", "blue", [["blue", "neutral"]]))
-	return deck
 	return deck;
 func add_new_card (card: CardData) -> void:
 	player_deck.append(card);

@@ -12,12 +12,13 @@ config_version=5
 
 config/name="CardGame"
 run/main_scene="uid://cctack103hm10"
-config/features=PackedStringArray("4.6", "GL Compatibility")
+config/features=PackedStringArray("4.7", "GL Compatibility")
 config/icon="res://icon.svg"
 
 [autoload]
 
 GameState="*uid://btn4v3v6swnjn"
+GlobalSignals="*uid://4jgsbv8dypfl"
 MapManager="*uid://ddfodmyhrrikg"
 
 [display]

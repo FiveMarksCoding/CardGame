@@ -4,14 +4,16 @@ extends Node
 # 单例引用（方便全局访问）
 static var instance=null;
 # 当前所在大层（1-7）
-var current_layer: int = 1
+var current_layer: int=1;
 # 当前层的地图数据
 var current_map_data: MapData = null
 # 各层配置（预设）
 var layer_configs: Dictionary = {}
-func _ready():
-	instance = self
+var current_node_id: String="";
+func _ready ():
+	instance=self;
 	_init_layer_configs()
+signal victory();
 
 func _init_layer_configs():
 	# 第1层：标准8层，无BOSS
@@ -131,3 +133,41 @@ func go_to_next_layer() -> void:
 func reset_to_first_layer() -> void:
 	current_layer = 1
 	generate_current_map()
+# 到当前节点
+func set_current_node(node_id: String):
+	current_node_id=node_id;
+# 完成当前节点
+func complete_node ():
+	if current_node_id=="":
+		return ;
+	var node=current_map_data.get_node(current_node_id);
+	if node==null:
+		return;
+	node.completed=1;
+	node.unlocked=0;  
+	for next_id in node.edges:
+		var next_node=current_map_data.get_node(next_id);
+		if next_node:
+			next_node.unlocked=1;
+	current_node_id="";
+# 赢了!
+func _on_victory():
+	print("战斗胜利！");
+	battle_over=1;
+	is_player_turn=0;
+	var rewards=RewardGenerator.generate("normal");  # 根据战斗类型传入
+	var logic=BattleRewardLogic.new();
+	logic.initialize(rewards);
+	var ui=BattleRewardUI.new();
+	add_child(ui);
+	ui.reward_completed.connect(_on_reward_completed);
+	ui.show_rewards(logic);
+# 奖励完成后的处理
+func _on_reward_completed():
+	# 通知地图系统节点已完成
+	victory.emit();
+	# 关闭战斗场景
+	_cleanup_battle();
+func _cleanup_battle():
+	# 回到地图
+	get_tree().change_scene_to_file("res://scenes/screens/MapScreen.tscn");

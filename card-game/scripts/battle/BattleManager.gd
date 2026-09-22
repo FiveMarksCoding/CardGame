@@ -263,3 +263,6 @@ func _on_enemy_died(_enemy: Enemy):
 	if all_dead:
 		battle_over = true
 		_on_victory()
+func _on_reward_completed ():
+	GlobalSignals.instance.battle_victory.emit();
+	_cleanup_battle();
