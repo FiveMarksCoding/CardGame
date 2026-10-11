@@ -17,14 +17,14 @@ const HAND_MOVE_TIME=0.4  #打出牌后手牌排列速度
 const CES=preload("res://scripts/battle/CardEffectSystem.gd");  #Preload
 
 var hands: Array[BattleCardUI]=[];
-var base_positions: Array[Vector2]=[];  # 存储每张牌的基准位置
+var base_positions: Array[Vector2]=[];
 var hover_count: int=0
-var exit_timer: float=0.0  # 延迟计时器 计时防抖
-var is_hovering: bool=0;  # 是否在手牌区域内
+var exit_timer: float=0.0
+var is_hovering: bool=0;
 var current_y_offset: float=0.0;
-var current_x_offsets: Array[float]=[];  # 每张牌独立的水平偏移
-var t_pos: Array[Vector2]=[];  # 存储计算好的目标位置
-var t_rot: Array[float]=[];      # 方向
+var current_x_offsets: Array[float]=[];
+var t_pos: Array[Vector2]=[];
+var t_rot: Array[float]=[];
 var drag_active: bool=0;
 var drag_card: BattleCardUI=null;
 
@@ -32,7 +32,6 @@ var drag_card: BattleCardUI=null;
 func _ready ():
 	z_index=99;
 	mouse_filter=Control.MOUSE_FILTER_IGNORE;
-	#HandContainer 不应该拦截鼠标事件
 	hover_count=0;
 	current_x_offsets=[];
 	for i in range(hands.size()):
@@ -43,11 +42,10 @@ func _process(delta):
 		exit_timer-=delta;
 		if exit_timer<=0:
 			exit_timer=0.0;
-			# 超时，确认鼠标已离开，执行下移
 			is_hovering=0;
 			_move_cards(0.0);
+
 ## 布局
-# 排列卡牌（只计算）
 func _arrange_cards ():
 	var n=hands.size();
 	if n==0:
@@ -62,77 +60,65 @@ func _arrange_cards ():
 	var start_x=(size.x-total_width)/2.0;
 	var y_offset=CARD_y;
 	for i in range(n):
-		# 离散化
 		var t: float;
 		if n==1:
 			t=0.0;
 		else:
-			t=(float(i)/float(n-1))*2.0-1.0;       
+			t=(float(i)/float(n-1))*2.0-1.0;
 		var x=start_x+i*(CARD_WIDTH+MAX_CARD_SPACING);
 		var arc_offset=-ARC_HEIGHT*(t*t)+ARC_HEIGHT;
-		var y=y_offset-arc_offset;  # arc_offset 为正，所以向上偏移
-		# 旋转角度
+		var y=y_offset-arc_offset;
 		var rot=t*ROT_MAX;
 		base_positions.append(Vector2(x,y));
-		t_pos.append(Vector2(x, y));
+		t_pos.append(Vector2(x,y));
 		t_rot.append(rot);
 	_apply_card_positions();
-# 废案方法
-func _apply_card_pos():
+func _apply_card_pos ():
 	_apply_card_positions(1);
-# 移动卡牌，拒绝硬编码移动
-func _move_cards(y: float):
+func _move_cards (y: float):
 	current_y_offset=y;
 	_apply_card_positions();
-# 统一移动卡牌，集成动画
-func _apply_card_positions(animate: bool = true):
-	# 确保偏移数组长度匹配
-	while current_x_offsets.size() < hands.size():
+func _apply_card_positions (animate: bool=true):
+	while current_x_offsets.size()<hands.size():
 		current_x_offsets.append(0.0)
-	while current_x_offsets.size() > hands.size():
+	while current_x_offsets.size()>hands.size():
 		current_x_offsets.pop_back()
-	
 	for i in range(hands.size()):
-		var card = hands[i]
+		var card=hands[i]
 		if (card==drag_card && drag_active) || !animate:
 			continue;
-		var base_pos = base_positions[i]
-		var x_offset = current_x_offsets[i] if i < current_x_offsets.size() else 0.0
-		var target_pos = Vector2(base_pos.x + x_offset, base_pos.y + current_y_offset)
-		var target_rot = t_rot[i] if i < t_rot.size() else 0.0
-
+		var base_pos=base_positions[i]
+		var x_offset=current_x_offsets[i] if i<current_x_offsets.size() else 0.0
+		var target_pos=Vector2(base_pos.x+x_offset,base_pos.y+current_y_offset)
+		var target_rot=t_rot[i] if i<t_rot.size() else 0.0
 		if animate:
-			# 创建并执行一个 Tween 动画
-			var tween = create_tween()
+			var tween=create_tween()
 			tween.set_ease(Tween.EASE_OUT)
 			tween.set_trans(Tween.TRANS_QUINT)
-			tween.tween_property(card, "position", target_pos, 0.2)
-			tween.parallel().tween_property(card, "rotation", target_rot, 0.2)
+			tween.tween_property(card,"position",target_pos,0.2)
+			tween.parallel().tween_property(card,"rotation",target_rot,0.2)
 		else:
-			card.position = target_pos
-			card.rotation = target_rot
-# 初始化手牌位置，属于抽牌动画部分
-func _reset_card_positions():
+			card.position=target_pos
+			card.rotation=target_rot
+func _reset_card_positions ():
 	current_x_offsets=[];
 	for i in range(hands.size()):
 		current_x_offsets.append(0.0);
 	_apply_card_positions();
-# 水平移开卡牌 区别_arrange_cards()
-func _spread_cards(hovered_card: BattleCardUI):
-	if hovered_card == null:
-		# 清除水平偏移
+func _spread_cards (hovered_card: BattleCardUI):
+	if hovered_card==null:
 		current_x_offsets=[];
 		for i in range(hands.size()):
 			current_x_offsets.append(0.0);
 		_apply_card_positions();
-		return ;
-	var n = hands.size()
-	if n <= 1:
+		return;
+	var n=hands.size()
+	if n<=1:
 		return
 	var hovered_index=hands.find(hovered_card);
 	current_x_offsets=[];
 	for i in range(n):
-		if i == hovered_index:
+		if i==hovered_index:
 			current_x_offsets.append(0.0);
 			continue;
 		var distance=abs(i-hovered_index);
@@ -141,9 +127,7 @@ func _spread_cards(hovered_card: BattleCardUI):
 		var offset_amount=scatter_offset/float(distance+1);
 		current_x_offsets.append(offset_sign*offset_amount);
 	_apply_card_positions();
-# 手牌区域计算
 func _get_hand_area () -> Rect2:
-	#print(base_positions);
 	if !base_positions.size():
 		return Rect2();
 	var min_x=base_positions[0].x;
@@ -155,17 +139,17 @@ func _get_hand_area () -> Rect2:
 		max_x=max(max_x,i.x+CARD_WIDTH);
 		min_y=min(min_y,i.y);
 		max_y=max(max_y,i.y+CARD_HEIGHT);
-	var t=20.0;  # margin
+	var t=20.0;
 	return Rect2(min_x-t,min_y-t,max_x-min_x+t*2,max_y-min_y+t*2);
+
 ## 拖拽与瞄准
-# 拖拽控制函数
-func _on_card_drag_started(card: BattleCardUI, mouse_pos: Vector2):
+func _on_card_drag_started (card: BattleCardUI, mouse_pos: Vector2):
 	drag_active=1;
 	drag_card=card;
 	if card.card_data.needs_target:
 		card._create_aim_line();
 	_update_drag_float(mouse_pos);
-func _on_card_drag_moved(card: BattleCardUI,mouse_pos: Vector2):
+func _on_card_drag_moved (card: BattleCardUI, mouse_pos: Vector2):
 	if drag_active:
 		_update_drag_float(mouse_pos);
 		if card.card_data.needs_target:
@@ -173,16 +157,15 @@ func _on_card_drag_moved(card: BattleCardUI,mouse_pos: Vector2):
 			var is_valid=(targ!=null);
 			card._update_aim_line(is_valid);
 			_highlight_target(targ);
-func _on_card_drag_ended(card: BattleCardUI, _mouse_pos: Vector2):
+func _on_card_drag_ended (card: BattleCardUI, _mouse_pos: Vector2):
 	drag_active=0;
 	drag_card=null;
 	card._clear_aim_line();
 	_highlight_target(null);
 	_update_float_from_hover();
-# 手牌整体升降刷新
 func _update_drag_float (_pos: Vector2):
 	if drag_active && drag_card && drag_card.card_data.needs_target:
-		return ;
+		return;
 	var local_mouse=get_local_mouse_position();
 	var hand_area=_get_hand_area();
 	if hand_area.has_point(local_mouse):
@@ -191,8 +174,7 @@ func _update_drag_float (_pos: Vector2):
 	else:
 		if current_y_offset!=0.0:
 			_move_cards(0.0);
-# 获取鼠标下的敌人目标
-func _get_target_at_mouse(_mouse_pos: Vector2) -> Enemy:
+func _get_target_at_mouse (_mouse_pos: Vector2) -> Enemy:
 	var bm=_get_battle_manager();
 	if !bm:
 		return null;
@@ -200,21 +182,17 @@ func _get_target_at_mouse(_mouse_pos: Vector2) -> Enemy:
 	for enemy in bm.enemies:
 		if enemy.is_dead():
 			continue;
-		# 距离检测：敌人中心点半径40像素（约等于碰撞体大小的一半）
 		if global_mouse.distance_to(enemy.global_position)<40:
 			return enemy;
 	return null;
-# 高亮/取消高亮目标
-func _highlight_target(target: Enemy):
-	# 先清除所有敌人高亮
+func _highlight_target (target: Enemy):
 	var bm=_get_battle_manager();
 	if !bm:
 		return;
 	for enemy in bm.enemies:
 		enemy.modulate=Color.WHITE
 		if enemy==target:
-			enemy.modulate=Color(1.5, 1.5, 0.5);  # 亮黄色高亮
-# 能量ui建立(具体已独立为Energy.gd)
+			enemy.modulate=Color(1.5,1.5,0.5);
 func _create_energy_ui ():
 	var EnergyUI_script=preload("res://scripts/battle/EnergyUI.gd");
 	var energy_ui=EnergyUI_script.new();
@@ -222,52 +200,45 @@ func _create_energy_ui ():
 	energy_ui.position=Vector2(0,size.y-250);
 	energy_ui.size=Vector2(size.x,40);
 	add_child(energy_ui);
+
 ## 信号处理
-# 单卡悬停信号
-func _on_card_hover_entered(card: BattleCardUI):
-	#print("悬停触发")   # ← 加这行
-	card.select_card(); 
+func _on_card_hover_entered (card: BattleCardUI):
+	card.select_card();
 	_spread_cards(card);
-func _on_card_hover_exited(card: BattleCardUI):
-	card.deselect_card(); 
+func _on_card_hover_exited (card: BattleCardUI):
+	card.deselect_card();
 	_reset_card_positions();
-# 手牌悬停信号
-func _on_hand_hover_entered():
+func _on_hand_hover_entered ():
 	hover_count+=1;
 	if hover_count==1 && !drag_active:
 		exit_timer=0.0;
 		is_hovering=1;
 		_move_cards(HOVER_UP_OFFSET);
-func _on_hand_hover_exited():
+func _on_hand_hover_exited ():
 	hover_count-=1
 	if hover_count==0 && !drag_active:
 		exit_timer=EXIT_DELAY;
-# 控制手牌上移
 func _update_float_from_hover ():
 	if hover_count>0:
 		_move_cards(HOVER_UP_OFFSET);
 	else:
 		_move_cards(0.0);
-## 卡牌操作
 
-func _calculate_rotation(index: int, total: int) -> float:
-	if total <= 1:
+## 卡牌操作
+func _calculate_rotation (index: int, total: int) -> float:
+	if total<=1:
 		return 0.0
-	# 离散化
-	var t=(index as float)/(total-1);  
+	var t=(index as float)/(total-1);
 	t=t*2.0-1.0;
 	var angle_rad=deg_to_rad(MAX_ANGLE_DEG);
 	return t*angle_rad;
-
 func _set_all_card_scale (scale_target: float):
 	for i in hands:
 		var tween=create_tween();
 		tween.set_ease(Tween.EASE_OUT);
 		tween.set_trans(Tween.TRANS_QUINT);
 		tween.tween_property(i,"scale",Vector2(scale_target,scale_target),0.15);
-# 打牌
-# HandContainer.gd - 修改 play_card
-func play_card (card: BattleCardUI,target: Vector2,enemy: Enemy=null):
+func play_card (card: BattleCardUI, target: Vector2, enemy: Enemy=null):
 	card.set_interactive(0);
 	card.select_card();
 	var index=hands.find(card)
@@ -275,27 +246,22 @@ func play_card (card: BattleCardUI,target: Vector2,enemy: Enemy=null):
 		hands.remove_at(index);
 		var bm=_get_battle_manager();
 		if bm:
-			bm.discard.append(card.card_data);
-			#print("打出并弃牌：", card.card_data.card_name);
-		#base_positions.remove_at(index);
+			bm.deck.discard(card.card_data);
 	_arrange_cards();
 	_apply_card_pos();
-	card.fly_to(target, 0.4, func():
+	card.fly_to(target,0.4,func():
 		_execute_card_effect(card.card_data,enemy);
 		_card_hold_awit(card);
 	)
-# 应用卡牌具体效果(发送给 CardEffectSystem.gd,也就是CES)
-func _execute_card_effect (card_data: CardData,target: Enemy):
+func _execute_card_effect (card_data: CardData, target: Enemy):
 	var bm=_get_battle_manager();
 	if bm==null:
-		return ;
+		return;
 	CES.execute_card_effect(card_data,target,bm);
-# 打出后右侧悬停动画
 func _card_hold_awit (card: BattleCardUI):
 	var tween=create_tween();
 	tween.tween_interval(0.8)
 	tween.tween_callback(func():
-		# 向右下角快速移动并消失
 		var end_pos=Vector2(1280+100,720+100);
 		var fly_tween=create_tween();
 		fly_tween.set_ease(Tween.EASE_IN);
@@ -303,17 +269,16 @@ func _card_hold_awit (card: BattleCardUI):
 		fly_tween.tween_property(card,"global_position",end_pos,0.15);
 		fly_tween.tween_callback(card.queue_free);
 	);
-# 抽一张牌
 func draw_one_card () -> bool:
 	var bm=_get_battle_manager();
 	if bm==null:
 		print("wrong\n");
 		return 0;
-	var card_data=bm.draw_one();
+	var card_data=bm.deck.draw_one();
 	if card_data==null:
 		return 0;
 	var card=BattleCardUI.new();
-	card.setup(card_data); 
+	card.setup(card_data);
 	card.hover_entered.connect(_on_card_hover_entered);
 	card.hover_exited.connect(_on_card_hover_exited);
 	card.hand_hover_entered.connect(_on_hand_hover_entered);
@@ -328,25 +293,21 @@ func draw_one_card () -> bool:
 	_arrange_cards();
 	_apply_card_positions();
 	return 1;
-# 弃一张牌
-func discard_card(card: BattleCardUI):
+func discard_card (card: BattleCardUI):
 	var index=hands.find(card);
-	if index==-1: 
-		return ;
+	if index==-1:
+		return;
 	var _global_pos=card.global_position;
 	var bm=_get_battle_manager();
 	if bm:
-		var card_data=card.card_data;  
-		bm.discard.append(card_data);  
+		var card_data=card.card_data;
+		bm.deck.discard(card_data);
 		print("弃牌：",card_data.card_name);
-		
 	hands.remove_at(index);
 	base_positions.remove_at(index);
-	# 重新排列剩余手牌
 	_arrange_cards();
 	card.play_discard_animation();
-# 尝试打一张牌
-func try_play_card(card: BattleCardUI, mouse_pos: Vector2):
+func try_play_card (card: BattleCardUI, mouse_pos: Vector2):
 	var local_mouse=get_local_mouse_position()
 	var hand_area=_get_hand_area()
 	if hand_area.has_point(local_mouse):
@@ -355,25 +316,20 @@ func try_play_card(card: BattleCardUI, mouse_pos: Vector2):
 	var bm=_get_battle_manager()
 	if bm==null:
 		return;
-	# 目标检查
 	var target: Enemy=null;
 	if card.card_data.needs_target:
 		target=_get_target_at_mouse(mouse_pos);
 		if target==null:
-			# 没有目标，取消打出
 			_cancel_play(card);
 			return;
-	# 能量检查
 	var reqs=card.card_data.energy_re;
 	if !reqs.is_empty():
 		if !bm.consume_energy(reqs):
 			_cancel_play(card);
 			return;
-	# 执行打出
 	var target_pos=Vector2(930,240);
 	play_card(card,target_pos,target);
-# 放回去/打不出去
-func _cancel_play(card: BattleCardUI):
+func _cancel_play (card: BattleCardUI):
 	card.set_interactive(1);
 	var index=hands.find(card);
 	if index!=-1:
@@ -388,27 +344,25 @@ func _cancel_play(card: BattleCardUI):
 	else:
 		print("错误：手上有未知卡牌");
 		card.queue_free();
-# 染色请求
-func request_color_card(card: BattleCardUI):
+func request_color_card (card: BattleCardUI):
 	var bm=_get_battle_manager()
 	if bm==null:
-		return ;
+		return;
 	if !bm.is_player_turn:
-		#print("敌人回合，无法染色")
-		return ;
+		return;
 	if !(card in hands):
-		return ;
-	# 尝试染色
+		return;
 	var s=bm.try_color_card(card.card_data)
 	if s:
 		discard_card(card);
 	else:
 		print("染色失败");
+
 ## 对外接口
-func _get_battle_manager() -> BattleManager:
+func _get_battle_manager () -> BattleSystem:
 	var p=get_parent();
 	while p:
 		if p.has_node("BattleManager"):
-			return p.get_node("BattleManager") as BattleManager;
+			return p.get_node("BattleManager") as BattleSystem;
 		p=p.get_parent();
 	return null;

@@ -1,6 +1,6 @@
 extends RefCounted;
 class_name  CardEffectSystem;
-static func execute_card_effect (card_data: CardData,target: Enemy,battle_manager: BattleManager):
+static func execute_card_effect (card_data: CardData,target: Enemy,battle_manager: BattleSystem):
 	# 伤害
 	if card_data.damage>0 && target:
 		target.take_damage(card_data.damage);

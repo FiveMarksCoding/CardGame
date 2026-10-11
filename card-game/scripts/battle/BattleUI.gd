@@ -1,7 +1,7 @@
 extends CanvasLayer;
 class_name BattleUI;
 
-var _battle_manager: BattleManager=null;
+var _battle_manager: BattleSystem=null;
 var _hp_label: Label=null;
 var _block_label: Label=null;
 var _end_turn_btn: Button=null;
@@ -17,11 +17,11 @@ func _ready ():
 		_update_ui();
 	else:
 		print("BattleUI: 找不到 BattleManager");
-func _get_battle_manager () -> BattleManager:
+func _get_battle_manager () -> BattleSystem:
 	var p=get_parent();
 	while p:
 		if p.has_node("BattleManager"):
-			return p.get_node("BattleManager") as BattleManager;
+			return p.get_node("BattleManager") as BattleSystem;
 		p=p.get_parent();
 	return null;
 func _connect_signals ():

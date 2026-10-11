@@ -10,5 +10,6 @@ cost = 1
 card_type = "skill"
 block = 4
 description = "Gain 4 blocks"
+card_color = "blue"
 energy_re = [["neutral"]]
 metadata/_custom_type_script = "uid://d5w23iqpyp4q"
