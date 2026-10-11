@@ -13,7 +13,6 @@ var current_node_id: String="";
 func _ready ():
 	instance=self;
 	_init_layer_configs()
-signal victory();
 
 func _init_layer_configs():
 	# 第1层：标准8层，无BOSS
@@ -73,12 +72,12 @@ func _init_layer_configs():
 		"special_rule": "four_nodes"
 	}
 # 获取当前层的配置
-func get_current_config() -> MapGenerationConfig:
+func get_current_config() -> MapConfig:
 	var config_data = layer_configs.get(current_layer)
 	if config_data == null:
-		return MapGenerationConfig.new(8, false)
+		return MapConfig.new(8, false)
 	
-	var config = MapGenerationConfig.new(
+	var config = MapConfig.new(
 		config_data["row_count"],
 		config_data["has_boss"]
 	)
@@ -117,7 +116,7 @@ func get_current_config() -> MapGenerationConfig:
 # 生成当前层地图
 func generate_current_map() -> MapData:
 	var config = get_current_config()
-	var generator = StandardMapGenerator.new()
+	var generator=MapGenerator.new()
 	current_map_data = generator.generate(config)
 	return current_map_data
 
@@ -151,12 +150,3 @@ func complete_node ():
 			next_node.unlocked=1;
 	current_node_id="";
 # 赢了!
-
-func _on_reward_completed():
-	# 通知地图系统节点已完成
-	victory.emit();
-	# 关闭战斗场景
-	_cleanup_battle();
-func _cleanup_battle():
-	# 回到地图
-	get_tree().change_scene_to_file("res://scenes/screens/MapScreen.tscn");

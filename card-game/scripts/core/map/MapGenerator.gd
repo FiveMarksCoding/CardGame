@@ -1,10 +1,10 @@
 extends RefCounted;
-class_name StandardMapGenerator;
+class_name MapGenerator;
 
-var config:MapGenerationConfig=null;
+var config:MapConfig=null;
 const ADD_PERCENT:float=0.4;
 
-func generate(_x:MapGenerationConfig)->MapData:
+func generate(_x:MapConfig)->MapData:
 	config=_x;
 	var rule=config.custom_rules.get("special_rule","");
 	

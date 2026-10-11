@@ -1,5 +1,5 @@
 extends RefCounted;
-class_name MapGenerationConfig;
+class_name MapConfig;
 
 var row_count: int=8;                    # 总行数（小层数）
 var has_boss: bool=0;               # 是否有BOSS

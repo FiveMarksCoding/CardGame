@@ -14,7 +14,6 @@ const SCATTER_OFFSET_RIGHT=90.0;     # 右撤退距离
 const MAX_ANGLE_DEG=15.0;   	# 最大倾斜角度（弧度）
 const EXIT_DELAY: float=0.5  # 延迟时间（秒）
 const HAND_MOVE_TIME=0.4  #打出牌后手牌排列速度
-const CES=preload("res://scripts/battle/CardEffectSystem.gd");  #Preload
 
 var hands: Array[BattleCardUI]=[];
 var base_positions: Array[Vector2]=[];
@@ -254,10 +253,10 @@ func play_card (card: BattleCardUI, target: Vector2, enemy: Enemy=null):
 		_card_hold_awit(card);
 	)
 func _execute_card_effect (card_data: CardData, target: Enemy):
-	var BS=_get_battle_system();
-	if BS==null:
+	var bm=_get_battle_system();
+	if bm==null:
 		return;
-	CES.execute_card_effect(card_data,target,BS);
+	bm.resolve_card(card_data,target);
 func _card_hold_awit (card: BattleCardUI):
 	var tween=create_tween();
 	tween.tween_interval(0.8)

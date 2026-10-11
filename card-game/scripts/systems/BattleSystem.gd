@@ -189,7 +189,7 @@ func _on_enemy_died (_enemy: Enemy):
 			all_dead=false;
 			break;
 	if all_dead:
-		logic.mark_victory();
+		logic.mark_vic();
 		_on_victory();
 
 func _on_reward_completed ():
@@ -198,3 +198,11 @@ func _on_reward_completed ():
 
 func _cleanup_battle ():
 	print("_cleanup_battle 被调用");
+# BattleSystem.gd - 新增
+func resolve_card (card_data: CardData, target: Enemy) -> void:
+	var result=CardResolver.resolve(card_data,target,logic);
+	if result["damage"]>0:
+		print("%s 对 %s 造成 %d 点伤害" % [card_data.card_name,target.data.name,result["damage"]]);
+	if result["block"]>0:
+		player_block_changed.emit(logic.player_block);
+		print("获得 %d 点格挡" % result["block"]);
