@@ -94,7 +94,7 @@ func get_current_config() -> MapConfig:
 	# 读取 rest_chance（如果有）← 新增
 	if config_data.has("rest_chance"):
 		config.rest_chance = config_data["rest_chance"]
-	# MapManager.gd - get_current_config() 中添加
+	# MapSystem.gd - get_current_config() 中添加
 	if config_data.has("shop_replacement_rate"):
 		config.custom_rules["shop_replacement_rate"] = config_data["shop_replacement_rate"]
 	# 菱形布局
@@ -116,7 +116,7 @@ func get_current_config() -> MapConfig:
 # 生成当前层地图
 func generate_current_map() -> MapData:
 	var config = get_current_config()
-	var generator=MapGenerator.new()
+	var generator=MapGenerator.new()	
 	current_map_data = generator.generate(config)
 	return current_map_data
 

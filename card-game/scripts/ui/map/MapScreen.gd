@@ -13,7 +13,7 @@ func _ready():
 	print("[MapScreen] _ready 开始");
 	map_container=Control.new();
 	add_child(map_container);
-	print("[MapScreen] MapManager.instance = ", MapManager.instance);
+	print("[MapScreen] MapSystem.instance = ", MapSystem.instance);
 	_load_current_map();
 	
 	# 调试按钮
@@ -25,16 +25,16 @@ func _ready():
 	print("[MapScreen] _ready 结束");
 
 func _on_debug_next_layer():
-	if MapManager.instance==null:
+	if MapSystem.instance==null:
 		return;
-	MapManager.instance.go_to_next_layer();
+	MapSystem.instance.go_to_next_layer();
 	_load_current_map();
 
 func _load_current_map():
-	if MapManager.instance==null:
-		print("[MapScreen] MapManager 未初始化");
+	if MapSystem.instance==null:
+		print("[MapScreen] MapSystem 未初始化");
 		return;
-	map_data = MapManager.instance.generate_current_map();
+	map_data = MapSystem.instance.generate_current_map();
 	print("[MapScreen] map_data = ", map_data);
 	if map_data:
 		print("[MapScreen] nodes.size() = ", map_data.nodes.size());
@@ -109,7 +109,7 @@ func _on_node_clicked (node_id: String):
 		return;
 	if !(node.unlocked && !node.completed):
 		return;
-	MapManager.instance.set_current_node(node_id);
+	MapSystem.instance.set_current_node(node_id);
 	var battle=load("res://scenes/battle/Battle.tscn").instantiate();
 	get_tree().root.add_child(battle);
 

@@ -20,7 +20,7 @@ config/icon="res://icon.svg"
 CardLib="*uid://3bdneqyjgtag"
 GameState="*uid://btn4v3v6swnjn"
 GlobalSignals="*uid://4jgsbv8dypfl"
-MapManager="*uid://ddfodmyhrrikg"
+MapSystem="*uid://ddfodmyhrrikg"
 
 [display]
 
