@@ -1,14 +1,12 @@
-extends Node;
-#class_name GameState; #autoload 自带了
+extends Node
 
-var player_deck: Array[CardData] = [];
-var gold: int = 0;
+var player_deck: Array=[];      # 玩家当前牌组
+var gold: int=0;                # 金币
+var relics: Array=[];           # 遗物（后续）
+var current_layer: int=1;       # 当前大层
 
 func _ready():
-	player_deck = create_new_deck();
-	gold = 99;
-	print("GameState 已加载, 卡组共 %d 张，gold = %d" % [player_deck.size(),gold]);
-# GameState.gd - create_new_deck()
+	print("GameState 已加载");
 func create_new_deck() -> Array[CardData]:
 	var deck: Array[CardData] = []
 	deck.append(CardData.new("strike", "打击", 1, "attack", 5, 0, true, "", "blue", [ ["blue", "neutral"]]))

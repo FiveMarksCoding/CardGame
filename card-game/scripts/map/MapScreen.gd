@@ -141,8 +141,3 @@ func _input(event):
 		var now_x=container_start+delta;
 		map_container.position.x=now_x;
 # 战斗胜利后
-func _on_battle_victory():
-	# 完成当前节点
-	MapManager.instance.complete_current_node();
-	# 刷新地图
-	_load_current_map();

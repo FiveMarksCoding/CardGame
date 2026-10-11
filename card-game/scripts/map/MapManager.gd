@@ -151,18 +151,7 @@ func complete_node ():
 			next_node.unlocked=1;
 	current_node_id="";
 # 赢了!
-func _on_victory():
-	print("战斗胜利！");
-	battle_over=1;
-	is_player_turn=0;
-	var rewards=RewardGenerator.generate("normal");  # 根据战斗类型传入
-	var logic=BattleRewardLogic.new();
-	logic.initialize(rewards);
-	var ui=BattleRewardUI.new();
-	add_child(ui);
-	ui.reward_completed.connect(_on_reward_completed);
-	ui.show_rewards(logic);
-# 奖励完成后的处理
+
 func _on_reward_completed():
 	# 通知地图系统节点已完成
 	victory.emit();
