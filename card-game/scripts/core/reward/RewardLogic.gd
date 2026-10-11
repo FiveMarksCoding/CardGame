@@ -1,5 +1,5 @@
 extends RefCounted;
-class_name BattleRewardLogic;
+class_name RewardLogic;
 
 enum State {
 	PENDING,      # 待处理
@@ -15,7 +15,7 @@ var card_reward_count: int=3;
 # 奖励卡牌组
 var card_groups: Array = []  # 存储每组卡牌的索引范围
 
-# BattleRewardLogic.gd - 删除 generate_rewards() 函数
+# RewardLogic.gd - 删除 generate_rewards() 函数
 # 新增 initialize() 函数
 
 func initialize (rewards_array: Array[RewardData]):

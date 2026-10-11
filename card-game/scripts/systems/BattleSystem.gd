@@ -175,9 +175,9 @@ func _check_victory () -> void:
 func _on_victory ():
 	print("战斗胜利！");
 	var rewards=RewardGenerator.generate("normal");
-	var rlogic=BattleRewardLogic.new();
+	var rlogic=RewardLogic.new();
 	rlogic.initialize(rewards);
-	var ui=BattleRewardUI.new();
+	var ui=RewardUI.new();
 	add_child(ui);
 	ui.reward_completed.connect(_on_reward_completed);
 	ui.show_rewards(rlogic);

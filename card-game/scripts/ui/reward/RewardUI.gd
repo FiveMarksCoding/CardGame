@@ -1,10 +1,10 @@
 extends CanvasLayer;
-class_name BattleRewardUI;
+class_name RewardUI;
 
 signal reward_completed();
 signal reward_deferred();
 
-var _logic: BattleRewardLogic = null
+var _logic: RewardLogic = null
 var _current_group_index: int = 0  # 当前打开的卡牌组索引
 var _is_sub_ui_open: bool = false
 
@@ -24,7 +24,7 @@ func _ready():
 	visible=0;
 	# 确保 CanvasLayer 在最高层
 	layer=10;
-func show_rewards(logic: BattleRewardLogic) -> void:
+func show_rewards(logic: RewardLogic) -> void:
 	_logic=logic;
 	_current_group_index=0;
 	_is_sub_ui_open=0;
