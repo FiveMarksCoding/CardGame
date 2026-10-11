@@ -266,3 +266,6 @@ func _on_enemy_died(_enemy: Enemy):
 func _on_reward_completed ():
 	GlobalSignals.instance.battle_victory.emit();
 	_cleanup_battle();
+func _cleanup_battle():
+	# 临时占位：先只打印，不切换场景
+	print("_cleanup_battle 被调用");

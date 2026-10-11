@@ -8,7 +8,7 @@ static func generate (battle_type: String) -> Array[RewardData]:
 	# 普通战斗 1 组三选一，精英战斗 2 组
 	var group_count=1 if battle_type!="elite"  else 2;
 	for g in range(group_count):
-		var ids=CardPool.get_random_cards(3);  # 三选一
+		var ids=CardLib.get_random_cards(3);  # 三选一
 		for i in ids:
 			rewards.append(RewardData.create_card(i));
 	# 金币奖励

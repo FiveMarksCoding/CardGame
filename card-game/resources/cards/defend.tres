@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="CardData" format=3 uid="uid://bbu4fqhsr8fcr"]
+
+[ext_resource type="Script" uid="uid://d5w23iqpyp4q" path="res://scripts/data/CardData.gd" id="1_sf5wv"]
+
+[resource]
+script = ExtResource("1_sf5wv")
+id = "defend"
+card_name = "Defend"
+cost = 1
+card_type = "skill"
+block = 4
+description = "Gain 4 blocks"
+energy_re = [["neutral"]]
+metadata/_custom_type_script = "uid://d5w23iqpyp4q"

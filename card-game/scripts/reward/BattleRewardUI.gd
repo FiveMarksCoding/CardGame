@@ -271,16 +271,5 @@ func _fly_to_top_left(node: Control, should_free: bool = true) -> void:
 		tween.tween_callback(node.queue_free)
 	else:
 		tween.tween_callback(func(): node.modulate = Color(1, 1, 1, 0))
-# 临时
 func _get_card_data_by_id(id: String) -> CardData:
-	for card in GameState.player_deck:
-		if card.id == id:
-			return card
-	var temp_data = CardData.new()
-	temp_data.id = id
-	temp_data.card_name = id.replace("_", " ").capitalize()
-	temp_data.card_type = "attack" if id.contains("strike") else "skill"
-	temp_data.damage = 5
-	temp_data.block = 0
-	temp_data.needs_target = true
-	return temp_data
+	return CardLib.get_card(id)

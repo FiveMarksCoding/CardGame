@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="CardData" format=3 uid="uid://bfnhye166ihkr"]
+
+[ext_resource type="Script" uid="uid://d5w23iqpyp4q" path="res://scripts/data/CardData.gd" id="1_h7w23"]
+
+[resource]
+script = ExtResource("1_h7w23")
+id = "iron_wave"
+card_name = "Iron_wave"
+cost = 1
+damage = 5
+block = 4
+needs_target = true
+description = "Damage 5.Gain 4 blocks"
+energy_re = [["blue", "red"]]
+metadata/_custom_type_script = "uid://d5w23iqpyp4q"
