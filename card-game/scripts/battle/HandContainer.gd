@@ -175,7 +175,7 @@ func _update_drag_float (_pos: Vector2):
 		if current_y_offset!=0.0:
 			_move_cards(0.0);
 func _get_target_at_mouse (_mouse_pos: Vector2) -> Enemy:
-	var bm=_get_battle_manager();
+	var bm=_get_battle_system();
 	if !bm:
 		return null;
 	var global_mouse=get_global_mouse_position()
@@ -186,7 +186,7 @@ func _get_target_at_mouse (_mouse_pos: Vector2) -> Enemy:
 			return enemy;
 	return null;
 func _highlight_target (target: Enemy):
-	var bm=_get_battle_manager();
+	var bm=_get_battle_system();
 	if !bm:
 		return;
 	for enemy in bm.enemies:
@@ -244,9 +244,9 @@ func play_card (card: BattleCardUI, target: Vector2, enemy: Enemy=null):
 	var index=hands.find(card)
 	if index!=-1:
 		hands.remove_at(index);
-		var bm=_get_battle_manager();
-		if bm:
-			bm.deck.discard(card.card_data);
+		var BS=_get_battle_system();
+		if BS:
+			BS.deck.discard(card.card_data);
 	_arrange_cards();
 	_apply_card_pos();
 	card.fly_to(target,0.4,func():
@@ -254,10 +254,10 @@ func play_card (card: BattleCardUI, target: Vector2, enemy: Enemy=null):
 		_card_hold_awit(card);
 	)
 func _execute_card_effect (card_data: CardData, target: Enemy):
-	var bm=_get_battle_manager();
-	if bm==null:
+	var BS=_get_battle_system();
+	if BS==null:
 		return;
-	CES.execute_card_effect(card_data,target,bm);
+	CES.execute_card_effect(card_data,target,BS);
 func _card_hold_awit (card: BattleCardUI):
 	var tween=create_tween();
 	tween.tween_interval(0.8)
@@ -270,11 +270,11 @@ func _card_hold_awit (card: BattleCardUI):
 		fly_tween.tween_callback(card.queue_free);
 	);
 func draw_one_card () -> bool:
-	var bm=_get_battle_manager();
-	if bm==null:
+	var BS=_get_battle_system();
+	if BS==null:
 		print("wrong\n");
 		return 0;
-	var card_data=bm.deck.draw_one();
+	var card_data=BS.deck.draw_one();
 	if card_data==null:
 		return 0;
 	var card=BattleCardUI.new();
@@ -298,10 +298,10 @@ func discard_card (card: BattleCardUI):
 	if index==-1:
 		return;
 	var _global_pos=card.global_position;
-	var bm=_get_battle_manager();
-	if bm:
+	var BS=_get_battle_system();
+	if BS:
 		var card_data=card.card_data;
-		bm.deck.discard(card_data);
+		BS.deck.discard(card_data);
 		print("弃牌：",card_data.card_name);
 	hands.remove_at(index);
 	base_positions.remove_at(index);
@@ -313,7 +313,7 @@ func try_play_card (card: BattleCardUI, mouse_pos: Vector2):
 	if hand_area.has_point(local_mouse):
 		_cancel_play(card)
 		return
-	var bm=_get_battle_manager()
+	var bm=_get_battle_system()
 	if bm==null:
 		return;
 	var target: Enemy=null;
@@ -345,21 +345,21 @@ func _cancel_play (card: BattleCardUI):
 		print("错误：手上有未知卡牌");
 		card.queue_free();
 func request_color_card (card: BattleCardUI):
-	var bm=_get_battle_manager()
-	if bm==null:
+	var BS=_get_battle_system()
+	if BS==null:
 		return;
-	if !bm.is_player_turn:
+	if !BS.logic.is_player_turn:
 		return;
 	if !(card in hands):
 		return;
-	var s=bm.try_color_card(card.card_data)
+	var s=BS.try_color_card(card.card_data)
 	if s:
 		discard_card(card);
 	else:
 		print("染色失败");
 
 ## 对外接口
-func _get_battle_manager () -> BattleSystem:
+func _get_battle_system () -> BattleSystem:
 	var p=get_parent();
 	while p:
 		if p.has_node("BattleManager"):

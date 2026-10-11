@@ -1,20 +1,15 @@
-extends Node;
+extends Node
 class_name BattleSystem;
 # 牌堆
 var deck: Deck=Deck.new();
 var hand: Array[CardData]=[];
-# 基本信息
-var is_player_turn: bool=0;
-var turn_counts: int=0;
+# 战斗核心
+var logic: BattleLogic=BattleLogic.new();
 var enemies: Array=[];
-var player_health: int=100;
-var player_max_health: int=100;
-var player_block: int=0;
 var hand_container: HandContainer=null;
 var draw_count: int=5;
 var hand_limit: int=10;
-var battle_over: bool=0;
-# Energy
+# 能量
 var energy_pool: EnergyPool=EnergyPool.new();
 # 信号
 signal energy_changed();
@@ -29,7 +24,6 @@ func _ready ():
 		push_error("找不到 HandContainer！");
 	deck.setup(GameState.player_deck);
 	print("抽牌堆初始化完成，共 %d 张牌" % deck.draw_pile.size());
-	
 	_create_test_enemies();
 	start_player_turn();
 
@@ -88,32 +82,15 @@ func _create_test_enemies ():
 func start_player_turn ():
 	for enemy in enemies:
 		enemy.generate_new_intents();
-	turn_counts+=1;
+	logic.start_player_turn();
 	add_neutral_energy(3);
 	await draw_hands();
-	turn_started.emit(turn_counts);
-	is_player_turn=1;
+	turn_started.emit(logic.turn_count);
 
-func get_energy_queue () -> Array:
-	return energy_pool.get_queue();
-
-func add_neutral_energy (n: int):
-	energy_pool.add_neutral(n);
-	energy_changed.emit();
-func consume_energy (requirements: Array) -> bool:
-	var ok=energy_pool.consume(requirements);
-	if ok:
-		energy_changed.emit();
-	return ok;
-func try_color_card (card_data: CardData) -> bool:
-	var ok=energy_pool.color_card(card_data);
-	if ok:
-		energy_changed.emit();
-	return ok;
 func end_player_turn ():
-	if !is_player_turn || battle_over:
+	if !logic.is_player_turn || logic.battle_over:
 		return;
-	is_player_turn=0;
+	logic.end_player_turn();
 	print("=== 玩家回合结束 ===");
 	await execute_enemy_turn();
 	discard_all();
@@ -127,14 +104,13 @@ func execute_enemy_turn ():
 		print("%s 开始行动" % enemy.data.name);
 		var results=enemy.execute_intents();
 		_check_victory();
-		if battle_over:
+		if logic.battle_over:
 			break;
 		for result in results:
 			if result.has("damage"):
-				var actual_damage=reduce_damage_with_block(result["damage"]);
-				if actual_damage>0:
-					take_player_damage(actual_damage);
-					print("玩家受到 %d 点伤害" % actual_damage);
+				var actual=take_player_damage(result["damage"]);
+				if actual>0:
+					print("玩家受到 %d 点伤害" % actual);
 				else:
 					print("格挡完全挡住了攻击！");
 			if result.has("block"):
@@ -143,7 +119,7 @@ func execute_enemy_turn ():
 				print("%s 获得 %d 点力量（暂未实现）" % [enemy.data.name,result["strength"]]);
 			if result.has("heal"):
 				pass;
-		if is_player_dead():
+		if logic.is_player_dead():
 			print("玩家死亡！游戏结束");
 			return;
 		await get_tree().create_timer(0.5).timeout;
@@ -151,26 +127,41 @@ func execute_enemy_turn ():
 	return;
 
 func reduce_damage_with_block (damage: int) -> int:
-	if player_block>=damage:
-		player_block-=damage;
-		player_block_changed.emit(player_block);
-		return 0;
-	var remaining=damage-player_block;
-	player_block=0;
-	player_block_changed.emit(player_block);
+	var remaining=logic.reduce_with_block(damage);
+	player_block_changed.emit(logic.player_block);
 	return remaining;
 
-func take_player_damage (amount: int):
-	player_health-=amount;
-	if player_health<0:
-		player_health=0;
-	player_health_changed.emit(player_health,player_max_health);
+func take_player_damage (amount: int) -> int:
+	var actual=logic.take_damage(amount);
+	player_health_changed.emit(logic.player_hp,logic.player_max_hp);
+	return actual;
 
 func is_player_dead () -> bool:
-	return player_health<=0;
+	return logic.is_player_dead();
 
+# 能量
+func get_energy_queue () -> Array:
+	return energy_pool.get_queue();
+
+func add_neutral_energy (n: int):
+	energy_pool.add_neutral(n);
+	energy_changed.emit();
+
+func consume_energy (requirements: Array) -> bool:
+	var ok=energy_pool.consume(requirements);
+	if ok:
+		energy_changed.emit();
+	return ok;
+
+func try_color_card (card_data: CardData) -> bool:
+	var ok=energy_pool.color_card(card_data);
+	if ok:
+		energy_changed.emit();
+	return ok;
+
+# 胜负
 func _check_victory () -> void:
-	if battle_over:
+	if logic.battle_over:
 		return;
 	var all_dead=1;
 	for enemy in enemies:
@@ -178,18 +169,18 @@ func _check_victory () -> void:
 			all_dead=0;
 			break;
 	if all_dead:
-		battle_over=1;
+		logic.mark_victory();
 		_on_victory();
 
 func _on_victory ():
 	print("战斗胜利！");
 	var rewards=RewardGenerator.generate("normal");
-	var logic=BattleRewardLogic.new();
-	logic.initialize(rewards);
+	var rlogic=BattleRewardLogic.new();
+	rlogic.initialize(rewards);
 	var ui=BattleRewardUI.new();
 	add_child(ui);
 	ui.reward_completed.connect(_on_reward_completed);
-	ui.show_rewards(logic);
+	ui.show_rewards(rlogic);
 
 func _on_enemy_died (_enemy: Enemy):
 	var all_dead=true;
@@ -198,7 +189,7 @@ func _on_enemy_died (_enemy: Enemy):
 			all_dead=false;
 			break;
 	if all_dead:
-		battle_over=true;
+		logic.mark_victory();
 		_on_victory();
 
 func _on_reward_completed ():

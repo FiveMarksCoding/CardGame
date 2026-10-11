@@ -75,9 +75,9 @@ func _build_ui():
 func _update_ui():
 	if not _battle_manager:
 		return
-	_on_health_changed(_battle_manager.player_health, _battle_manager.player_max_health)
-	_on_block_changed(_battle_manager.player_block)
-	_on_turn_started(_battle_manager.turn_counts)
+	_on_health_changed(_battle_manager.logic.player_hp, _battle_manager.logic.player_max_hp)
+	_on_block_changed(_battle_manager.logic.player_block)
+	_on_turn_started(_battle_manager.logic.turn_count)
 
 func _on_health_changed(new_health: int, max_health: int):
 	if _hp_label:
