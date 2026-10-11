@@ -193,7 +193,7 @@ func _highlight_target (target: Enemy):
 		if enemy==target:
 			enemy.modulate=Color(1.5,1.5,0.5);
 func _create_energy_ui ():
-	var EnergyUI_script=preload("res://scripts/battle/EnergyUI.gd");
+	var EnergyUI_script=preload("res://scripts/ui/battle/EnergyUI.gd");
 	var energy_ui=EnergyUI_script.new();
 	energy_ui.name="EnergyUI";
 	energy_ui.position=Vector2(0,size.y-250);

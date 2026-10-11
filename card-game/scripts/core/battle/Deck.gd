@@ -9,6 +9,7 @@ var sum_deck: Array[CardData]=[];
 func setup (cards: Array[CardData]):
 	sum_deck=cards.duplicate();
 	draw_pile=cards.duplicate();
+	draw_pile.shuffle();
 	discard_pile.clear();
 	consumed_pile.clear();
 func draw_one () -> CardData:
