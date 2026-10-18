@@ -194,11 +194,12 @@ func _on_enemy_died (_enemy: Enemy):
 
 func _on_reward_completed ():
 	print("_on_reward_completed 被调用");
+	EventBus.battle_ended.emit(1);
 	_cleanup_battle();
-
 func _cleanup_battle ():
-	print("_cleanup_battle 被调用");
-# BattleSystem.gd - 新增
+	get_tree().create_timer(0.1).timeout.connect(func():
+		get_parent().queue_free();
+	);
 func resolve_card (card_data: CardData, target: Enemy) -> void:
 	var result=CardResolver.resolve(card_data,target,logic);
 	if result["damage"]>0:

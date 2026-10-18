@@ -149,4 +149,8 @@ func complete_node ():
 		if next_node:
 			next_node.unlocked=1;
 	current_node_id="";
-# 赢了!
+# 获取地图接口
+func get_current_map () -> MapData:
+	if current_map_data==null:
+		generate_current_map();
+	return current_map_data;

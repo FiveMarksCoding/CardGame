@@ -10,10 +10,10 @@ var container_start: float = 0.0
 const DRAG_THRESHOLD: float = 5.0
 
 func _ready():
-	print("[MapScreen] _ready 开始");
+	EventBus.battle_ended.connect(_on_battle_ended);
+	
 	map_container=Control.new();
 	add_child(map_container);
-	print("[MapScreen] MapSystem.instance = ", MapSystem.instance);
 	_load_current_map();
 	
 	# 调试按钮
@@ -22,24 +22,19 @@ func _ready():
 	debug_btn.position=Vector2(10,10);
 	debug_btn.pressed.connect(_on_debug_next_layer);
 	add_child(debug_btn);
-	print("[MapScreen] _ready 结束");
 
 func _on_debug_next_layer():
 	if MapSystem.instance==null:
 		return;
 	MapSystem.instance.go_to_next_layer();
 	_load_current_map();
-
 func _load_current_map():
 	if MapSystem.instance==null:
 		print("[MapScreen] MapSystem 未初始化");
 		return;
-	map_data = MapSystem.instance.generate_current_map();
+	map_data = MapSystem.instance.get_current_map();
 	print("[MapScreen] map_data = ", map_data);
-	if map_data:
-		print("[MapScreen] nodes.size() = ", map_data.nodes.size());
 	draw_map();
-
 func draw_map():
 	for child in map_container.get_children():
 		child.queue_free();
@@ -109,11 +104,26 @@ func _on_node_clicked (node_id: String):
 		return;
 	if !(node.unlocked && !node.completed):
 		return;
+		
 	MapSystem.instance.set_current_node(node_id);
+	
 	var battle=load("res://scenes/battle/Battle.tscn").instantiate();
 	get_tree().root.add_child(battle);
-
+	visible=0;
+	is_dragging=0;
+	Input.set_default_cursor_shape(Input.CURSOR_ARROW);
+func _on_battle_ended(victory: bool):
+	if victory:
+		print("[MapScreen] 收到战斗胜利信号，更新节点状态");
+		MapSystem.instance.complete_node();
+		_load_current_map();
+		map_container.position=Vector2.ZERO;
+		visible=1;
+	else:
+		print("[MapScreen] 战斗失败，暂未实现重试");
+		
 func _input(event):
+	if !visible: return;
 	if (event is InputEventMouseButton) && (event.button_index==MOUSE_BUTTON_LEFT):
 		if event.pressed:
 			is_dragging=1;
