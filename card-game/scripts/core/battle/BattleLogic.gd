@@ -37,3 +37,20 @@ func is_player_dead () -> bool:
 func mark_vic ():
 	battle_over=1;
 	vic=1;
+## snapshot
+func get_snapshot() -> Dictionary:
+	return {
+		"player_hp": player_hp,
+		"player_block": player_block,
+		"turn_count": turn_count,
+		"is_player_turn": is_player_turn,
+		"battle_over": battle_over,
+		"victory": vic
+	};
+func load_snapshot(data: Dictionary):
+	if data.has("player_hp"): player_hp=data["player_hp"];
+	if data.has("player_block"): player_block=data["player_block"];
+	if data.has("turn_count"): turn_count=data["turn_count"];
+	if data.has("is_player_turn"): is_player_turn=data["is_player_turn"];;
+	if data.has("battle_over"): battle_over=data["battle_over"];
+	if data.has("victory"): vic= data["victory"];

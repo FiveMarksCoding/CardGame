@@ -39,3 +39,6 @@ script = ExtResource("2_g84ej")
 
 [node name="BattleUI" type="CanvasLayer" parent="." unique_id=775530531]
 script = ExtResource("3_jnwmo")
+
+[node name="FXLayer" type="CanvasLayer" parent="." unique_id=1916861108]
+layer = 19

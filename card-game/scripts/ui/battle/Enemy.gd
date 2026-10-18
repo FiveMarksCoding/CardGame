@@ -14,6 +14,7 @@ signal died(enemy: Enemy);
 # 意图组缓存
 var _cached_intents: Array=[];
 
+
 func _ready():
 	# hitbox;
 	var hitbox=CollisionShape2D.new();
@@ -24,15 +25,18 @@ func _ready():
 	# 鼠标检测
 	mouse_entered.connect(_on_mouse_entered);
 	mouse_exited.connect(_on_mouse_exited);
+
 func setup (enemy_data: EnemyData):
 	data=enemy_data;
 	_build_visuals();
 	_update_health_display();
 	generate_new_intents();
+
 # 生成新回合的意图（从 EnemyData 获取）
 func generate_new_intents() -> void:
 	_cached_intents = data.get_intent_group()
 	_update_intents_display()
+
 func _build_visuals():
 	sprite=Sprite2D.new();
 	var rect_texture=PlaceholderTexture2D.new();
@@ -74,6 +78,7 @@ func _build_visuals():
 	intent_container.position=Vector2(70,-80);
 	intent_container.size=Vector2(120,160);
 	add_child(intent_container);
+
 func _create_intent_item (intent: Intent, index: int) -> Control:
 	var panel=Panel.new();
 	panel.size=Vector2(100,26);
@@ -93,6 +98,7 @@ func _create_intent_item (intent: Intent, index: int) -> Control:
 	panel.mouse_exited.connect(_on_intent_hovered.bind(index,0));
 	panel.gui_input.connect(_on_intent_clicked.bind(index));
 	return panel;
+
 func _get_intent_color (type: Intent.Type) -> Color:
 	match type:
 		Intent.Type.ATTACK:
@@ -107,23 +113,29 @@ func _get_intent_color (type: Intent.Type) -> Color:
 			return Color(0.2, 0.8, 0.3)   # 绿色
 		_:
 			return Color(0.5, 0.5, 0.5)   # 灰色
+
 func _on_intent_hovered (index: int, entered: bool):
 	if index<intent_items.size():
 		var item=intent_items[index]
 		item.modulate=Color(1.3, 1.3, 1.3) if entered else Color.WHITE
+
 func _on_intent_clicked(event: InputEvent, index: int):
 	if event is InputEventMouseButton && event.pressed && event.button_index==MOUSE_BUTTON_LEFT:
 		intent_selected.emit(self,index);
+
 func _on_mouse_entered():
 	modulate=Color(1.1, 1.1, 1.1);
+
 func _on_mouse_exited():
 	modulate=Color.WHITE;
+
 func _update_health_display():
 	if hp_bar:
 		hp_bar.value=data.current_hp;
 		var hp_text=hp_bar.get_node("HpText");
 		if hp_text:
 			hp_text.text="%d/%d"%[data.current_hp,data.max_hp];
+
 func take_damage (amount: int):
 	data.current_hp-=amount;
 	if data.current_hp<0:
@@ -135,23 +147,29 @@ func take_damage (amount: int):
 	modulate=Color.WHITE;
 	if data.current_hp<=0:
 		died.emit(self);
+
 # 接口
 func is_dead () -> bool:
 	return data.current_hp<=0;
+
 func get_intent_count() -> int:
-	return _cached_intents.size()
+	return _cached_intents.size();
+
 func get_intent_data(index: int) -> Intent:
 	if index >= 0 and index < _cached_intents.size():
 		return _cached_intents[index]
 	return null
+
 func replace_intent(index: int, new_intent: Intent):
 	if index >= 0 and index < _cached_intents.size():
 		_cached_intents[index] = new_intent
 		_update_intents_display() 
+
 func remove_intent(index: int):
 	if index >= 0 and index < _cached_intents.size():
 		_cached_intents.remove_at(index)
 		_update_intents_display()
+
 # 用当前缓存更新 UI
 func _update_intents_display():
 	for child in intent_container.get_children():
@@ -165,6 +183,7 @@ func _update_intents_display():
 		intent_container.add_child(item)
 		intent_items.append(item)
 		y_offset += 30
+
 func execute_intents () -> Array:
 	var results: Array=[];
 	var intents=_cached_intents;  # 使用当前缓存
@@ -175,6 +194,7 @@ func execute_intents () -> Array:
 	_cached_intents.clear();
 	_update_intents_display();
 	return results;
+
 func execute_one (intent: Intent) -> Dictionary:
 	var result = {
 		"type": intent.type,
@@ -209,3 +229,27 @@ func execute_one (intent: Intent) -> Dictionary:
 			print("%s 执行未知意图.这啥玩意" % data.name)
 			result["success"]=0;
 	return result;
+
+## snapshot
+func get_snapshot() -> Dictionary:
+	var intents_data = []
+	for intent in _cached_intents:
+		intents_data.append({
+			"type": intent.type,
+			"value": intent.value,
+			"times": intent.times
+		});
+	return {
+		"hp": data.current_hp,
+		"intents": intents_data
+	};
+func load_snapshot(snap: Dictionary):
+	if snap.has("hp"):
+		data.current_hp=snap["hp"];
+		_update_health_display();
+	if snap.has("intents"):
+		_cached_intents.clear();
+		for i_data in snap["intents"]:
+			var new_intent=Intent.new(i_data["type"], i_data["value"], i_data["times"]);
+			_cached_intents.append(new_intent);
+		_update_intents_display();

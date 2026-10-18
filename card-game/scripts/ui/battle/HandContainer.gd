@@ -259,29 +259,30 @@ func _set_all_card_scale (scale_target: float):
 		tween.set_ease(Tween.EASE_OUT);
 		tween.set_trans(Tween.TRANS_QUINT);
 		tween.tween_property(i,"scale",Vector2(scale_target,scale_target),0.15);
-
-func play_card (card: BattleCardUI, target: Vector2, enemy: Enemy=null):
+func play_card (card: BattleCardUI,target: Vector2,enemy: Enemy=null):
 	card.set_interactive(0);
 	card.select_card();
-	var index=hands.find(card)
+	var index=hands.find(card);
 	if index!=-1:
 		hands.remove_at(index);
 		if bms:
 			bms.deck.discard(card.card_data);
 	_arrange_cards();
 	_apply_card_pos();
+	# 获取特效层
+	var battle_root=get_parent();
+	var fx_layer=battle_root.get_node_or_null("FXLayer");
 	card.fly_to(target,0.4,func():
 		_execute_card_effect(card.card_data,enemy);
 		_card_hold_awit(card);
-	)
-
+	, fx_layer);
 func _execute_card_effect (card_data: CardData, target: Enemy):
 	if bms == null:
 		return;
 	bms.resolve_card(card_data,target);
 
 func _card_hold_awit (card: BattleCardUI):
-	var tween=create_tween();
+	var tween=card.create_tween();
 	tween.tween_interval(0.8)
 	tween.tween_callback(func():
 		var end_pos=Vector2(1280+100,720+100);

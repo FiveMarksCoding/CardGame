@@ -18,6 +18,7 @@ signal player_block_changed(new_block: int);
 signal turn_started(turn_count: int);
 # data
 var battle_type: String="normal";
+var turn_history: Dictionary={};
 
 func _ready ():
 	if MapSystem.instance && (MapSystem.instance.current_node_id != ""):
@@ -104,6 +105,7 @@ func start_player_turn ():
 		enemy.generate_new_intents();
 	logic.start_player_turn();
 	add_neutral_energy(3);
+	_save_turn_snapshot();
 	await draw_hands();
 	turn_started.emit(logic.turn_count);
 

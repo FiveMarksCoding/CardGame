@@ -185,16 +185,21 @@ func get_selected() -> bool:
 func get_hovered() -> bool:
 	return is_hovered
 # 飞向目标。中国人能飞
-func fly_to (pos1:Vector2,time: float=0.3,callback: Callable=Callable()):
+func fly_to (pos1:Vector2,time: float=0.3,callback: Callable=Callable(),target_parent: Node=null):
 	var tree=get_tree();
 	if !tree:
 		print("fly_to: 树不存在，无法继续");
 		return;
 	var p=get_parent();
-	var current_global=global_position  # 记录当前位置
+	var current_global=global_position;  # 记录当前位置
 	if p:
 		p.remove_child(self);
-	tree.root.add_child(self);
+	# 如果有指定的父节点（如 FXLayer），就挂进去，否则退回 root
+	if target_parent:
+		target_parent.add_child(self);
+	else:
+		tree.root.add_child(self);
+
 	global_position=current_global;  # 恢复位置
 	var tween=create_tween();
 	tween.set_ease(Tween.EASE_OUT);

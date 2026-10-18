@@ -55,3 +55,11 @@ func color_card (card_data: CardData) -> bool:
 		return 0;
 	queue[neutral_index]=card_data.card_color;
 	return 1;
+## snapshot
+func get_snapshot() -> Dictionary:
+	return {
+		"queue": queue.duplicate()
+	};
+func load_snapshot(data: Dictionary):
+	if data.has("queue"):
+		queue=data["queue"].duplicate();

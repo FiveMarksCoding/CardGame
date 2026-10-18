@@ -29,3 +29,17 @@ func get_outgoing(node_id: String) -> Array:
 # 检查：从起点是否能到达某个节点
 func has_valid_path() -> bool:
 	return 1;
+## snapshot
+func get_snapshot() -> Dictionary:
+	var state={};
+	for id in nodes:
+		state[id] = {
+			"unlocked": nodes[id].unlocked,
+			"completed": nodes[id].completed
+		};
+	return state;
+func load_snapshot(data: Dictionary):
+	for id in data:
+		if nodes.has(id):
+			nodes[id].unlocked=data[id]["unlocked"];
+			nodes[id].completed=data[id]["completed"];
