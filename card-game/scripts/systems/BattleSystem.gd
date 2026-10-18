@@ -16,14 +16,25 @@ signal energy_changed();
 signal player_health_changed(new_health: int,max_health: int);
 signal player_block_changed(new_block: int);
 signal turn_started(turn_count: int);
+# data
+var battle_type: String="normal";
 
 func _ready ():
+	if MapSystem.instance && (MapSystem.instance.current_node_id != ""):
+		var node=MapSystem.instance.current_map_data.get_node(MapSystem.instance.current_node_id);
+		if node:
+			match node.node_type:
+				MapNodeData.NodeType.ELITE:
+					battle_type="elite";
+				MapNodeData.NodeType.BOSS:
+					battle_type="boss";
+	print("当前战斗类型: ",battle_type);
+	
 	print("BattleSystem 已加载");
 	hand_container=get_parent().get_node("HandContainer");
 	if !hand_container:
 		push_error("找不到 HandContainer！");
 	deck.setup(GameState.player_deck);
-	print("抽牌堆初始化完成，共 %d 张牌" % deck.draw_pile.size());
 	_create_test_enemies();
 	start_player_turn();
 
@@ -56,20 +67,29 @@ func discard_all ():
 		hand_container.discard_card(card_ui);
 
 func _create_test_enemies ():
+	var hp = 1
+	var atk = 5
+	if battle_type == "elite":
+		hp = 2
+		atk = 8
+	elif battle_type == "boss":
+		hp = 3
+		atk = 12
+		
 	var intent_pool=[
 		[
-			Intent.new(Intent.Type.ATTACK,5,1),
+			Intent.new(Intent.Type.ATTACK,atk,1),
 			Intent.new(Intent.Type.DEFEND,4,1),
 		],
 		[
-			Intent.new(Intent.Type.ATTACK,6,2),
+			Intent.new(Intent.Type.ATTACK,atk+2,2),
 		],
 		[
 			Intent.new(Intent.Type.BUFF,2,1),
-			Intent.new(Intent.Type.ATTACK,6,1),
+			Intent.new(Intent.Type.ATTACK,atk,1),
 		],
 	];
-	var enemy_data=EnemyData.new("goblin_1","哥布林",30,intent_pool);
+	var enemy_data=EnemyData.new("goblin_1","测试怪("+battle_type+")",hp,intent_pool);
 	var enemy=Enemy.new();
 	enemy.setup(enemy_data);
 	enemy.position=Vector2(400,300);
@@ -174,7 +194,7 @@ func _check_victory () -> void:
 
 func _on_victory ():
 	print("战斗胜利！");
-	var rewards=RewardGenerator.generate("normal");
+	var rewards=RewardGenerator.generate(battle_type);
 	var rlogic=RewardLogic.new();
 	rlogic.initialize(rewards);
 	var ui=RewardUI.new();

@@ -27,8 +27,14 @@ var t_rot: Array[float]=[];
 var drag_active: bool=0;
 var drag_card: BattleCardUI=null;
 
+var bms: BattleSystem=null;  # 缓存引用
+
 ## 常规函数
 func _ready ():
+	bms = _get_battle_system();  # 初始化缓存
+	if bms == null:
+		push_error("HandContainer: 找不到 BattleSystem！");
+		
 	z_index=99;
 	mouse_filter=Control.MOUSE_FILTER_IGNORE;
 	hover_count=0;
@@ -36,6 +42,7 @@ func _ready ():
 	for i in range(hands.size()):
 		current_x_offsets.append(0.0);
 	_create_energy_ui();
+
 func _process(delta):
 	if exit_timer>0:
 		exit_timer-=delta;
@@ -72,11 +79,14 @@ func _arrange_cards ():
 		t_pos.append(Vector2(x,y));
 		t_rot.append(rot);
 	_apply_card_positions();
+
 func _apply_card_pos ():
 	_apply_card_positions(1);
+
 func _move_cards (y: float):
 	current_y_offset=y;
 	_apply_card_positions();
+
 func _apply_card_positions (animate: bool=true):
 	while current_x_offsets.size()<hands.size():
 		current_x_offsets.append(0.0)
@@ -99,11 +109,13 @@ func _apply_card_positions (animate: bool=true):
 		else:
 			card.position=target_pos
 			card.rotation=target_rot
+
 func _reset_card_positions ():
 	current_x_offsets=[];
 	for i in range(hands.size()):
 		current_x_offsets.append(0.0);
 	_apply_card_positions();
+
 func _spread_cards (hovered_card: BattleCardUI):
 	if hovered_card==null:
 		current_x_offsets=[];
@@ -126,6 +138,7 @@ func _spread_cards (hovered_card: BattleCardUI):
 		var offset_amount=scatter_offset/float(distance+1);
 		current_x_offsets.append(offset_sign*offset_amount);
 	_apply_card_positions();
+
 func _get_hand_area () -> Rect2:
 	if !base_positions.size():
 		return Rect2();
@@ -148,6 +161,7 @@ func _on_card_drag_started (card: BattleCardUI, mouse_pos: Vector2):
 	if card.card_data.needs_target:
 		card._create_aim_line();
 	_update_drag_float(mouse_pos);
+
 func _on_card_drag_moved (card: BattleCardUI, mouse_pos: Vector2):
 	if drag_active:
 		_update_drag_float(mouse_pos);
@@ -156,12 +170,14 @@ func _on_card_drag_moved (card: BattleCardUI, mouse_pos: Vector2):
 			var is_valid=(targ!=null);
 			card._update_aim_line(is_valid);
 			_highlight_target(targ);
+
 func _on_card_drag_ended (card: BattleCardUI, _mouse_pos: Vector2):
 	drag_active=0;
 	drag_card=null;
 	card._clear_aim_line();
 	_highlight_target(null);
 	_update_float_from_hover();
+
 func _update_drag_float (_pos: Vector2):
 	if drag_active && drag_card && drag_card.card_data.needs_target:
 		return;
@@ -173,25 +189,26 @@ func _update_drag_float (_pos: Vector2):
 	else:
 		if current_y_offset!=0.0:
 			_move_cards(0.0);
+
 func _get_target_at_mouse (_mouse_pos: Vector2) -> Enemy:
-	var bm=_get_battle_system();
-	if !bm:
+	if !bms:
 		return null;
 	var global_mouse=get_global_mouse_position()
-	for enemy in bm.enemies:
+	for enemy in bms.enemies:
 		if enemy.is_dead():
 			continue;
 		if global_mouse.distance_to(enemy.global_position)<40:
 			return enemy;
 	return null;
+
 func _highlight_target (target: Enemy):
-	var bm=_get_battle_system();
-	if !bm:
+	if !bms:
 		return;
-	for enemy in bm.enemies:
+	for enemy in bms.enemies:
 		enemy.modulate=Color.WHITE
 		if enemy==target:
 			enemy.modulate=Color(1.5,1.5,0.5);
+
 func _create_energy_ui ():
 	var EnergyUI_script=preload("res://scripts/ui/battle/EnergyUI.gd");
 	var energy_ui=EnergyUI_script.new();
@@ -204,19 +221,23 @@ func _create_energy_ui ():
 func _on_card_hover_entered (card: BattleCardUI):
 	card.select_card();
 	_spread_cards(card);
+
 func _on_card_hover_exited (card: BattleCardUI):
 	card.deselect_card();
 	_reset_card_positions();
+
 func _on_hand_hover_entered ():
 	hover_count+=1;
 	if hover_count==1 && !drag_active:
 		exit_timer=0.0;
 		is_hovering=1;
 		_move_cards(HOVER_UP_OFFSET);
+
 func _on_hand_hover_exited ():
 	hover_count-=1
 	if hover_count==0 && !drag_active:
 		exit_timer=EXIT_DELAY;
+
 func _update_float_from_hover ():
 	if hover_count>0:
 		_move_cards(HOVER_UP_OFFSET);
@@ -231,32 +252,34 @@ func _calculate_rotation (index: int, total: int) -> float:
 	t=t*2.0-1.0;
 	var angle_rad=deg_to_rad(MAX_ANGLE_DEG);
 	return t*angle_rad;
+
 func _set_all_card_scale (scale_target: float):
 	for i in hands:
 		var tween=create_tween();
 		tween.set_ease(Tween.EASE_OUT);
 		tween.set_trans(Tween.TRANS_QUINT);
 		tween.tween_property(i,"scale",Vector2(scale_target,scale_target),0.15);
+
 func play_card (card: BattleCardUI, target: Vector2, enemy: Enemy=null):
 	card.set_interactive(0);
 	card.select_card();
 	var index=hands.find(card)
 	if index!=-1:
 		hands.remove_at(index);
-		var BS=_get_battle_system();
-		if BS:
-			BS.deck.discard(card.card_data);
+		if bms:
+			bms.deck.discard(card.card_data);
 	_arrange_cards();
 	_apply_card_pos();
 	card.fly_to(target,0.4,func():
 		_execute_card_effect(card.card_data,enemy);
 		_card_hold_awit(card);
 	)
+
 func _execute_card_effect (card_data: CardData, target: Enemy):
-	var bm=_get_battle_system();
-	if bm==null:
+	if bms == null:
 		return;
-	bm.resolve_card(card_data,target);
+	bms.resolve_card(card_data,target);
+
 func _card_hold_awit (card: BattleCardUI):
 	var tween=create_tween();
 	tween.tween_interval(0.8)
@@ -268,12 +291,12 @@ func _card_hold_awit (card: BattleCardUI):
 		fly_tween.tween_property(card,"global_position",end_pos,0.15);
 		fly_tween.tween_callback(card.queue_free);
 	);
+
 func draw_one_card () -> bool:
-	var BS=_get_battle_system();
-	if BS==null:
+	if bms == null:
 		print("wrong\n");
 		return 0;
-	var card_data=BS.deck.draw_one();
+	var card_data=bms.deck.draw_one();
 	if card_data==null:
 		return 0;
 	var card=BattleCardUI.new();
@@ -292,28 +315,28 @@ func draw_one_card () -> bool:
 	_arrange_cards();
 	_apply_card_positions();
 	return 1;
+
 func discard_card (card: BattleCardUI):
 	var index=hands.find(card);
 	if index==-1:
 		return;
 	var _global_pos=card.global_position;
-	var BS=_get_battle_system();
-	if BS:
+	if bms:
 		var card_data=card.card_data;
-		BS.deck.discard(card_data);
+		bms.deck.discard(card_data);
 		print("弃牌：",card_data.card_name);
 	hands.remove_at(index);
 	base_positions.remove_at(index);
 	_arrange_cards();
 	card.play_discard_animation();
+
 func try_play_card (card: BattleCardUI, mouse_pos: Vector2):
 	var local_mouse=get_local_mouse_position()
 	var hand_area=_get_hand_area()
 	if hand_area.has_point(local_mouse):
 		_cancel_play(card)
 		return
-	var bm=_get_battle_system()
-	if bm==null:
+	if bms == null:
 		return;
 	var target: Enemy=null;
 	if card.card_data.needs_target:
@@ -323,11 +346,12 @@ func try_play_card (card: BattleCardUI, mouse_pos: Vector2):
 			return;
 	var reqs=card.card_data.energy_re;
 	if !reqs.is_empty():
-		if !bm.consume_energy(reqs):
+		if !bms.consume_energy(reqs):
 			_cancel_play(card);
 			return;
 	var target_pos=Vector2(930,240);
 	play_card(card,target_pos,target);
+
 func _cancel_play (card: BattleCardUI):
 	card.set_interactive(1);
 	var index=hands.find(card);
@@ -343,15 +367,15 @@ func _cancel_play (card: BattleCardUI):
 	else:
 		print("错误：手上有未知卡牌");
 		card.queue_free();
+
 func request_color_card (card: BattleCardUI):
-	var BS=_get_battle_system()
-	if BS==null:
+	if bms == null:
 		return;
-	if !BS.logic.is_player_turn:
+	if !bms.logic.is_player_turn:
 		return;
 	if !(card in hands):
 		return;
-	var s=BS.try_color_card(card.card_data)
+	var s=bms.try_color_card(card.card_data)
 	if s:
 		discard_card(card);
 	else:
