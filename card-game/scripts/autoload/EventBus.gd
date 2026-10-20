@@ -25,3 +25,9 @@ signal reward_dismissed();
 # 局流程
 signal run_started();
 signal run_ended(vic: bool);
+
+# Snapshot System
+signal time_charges_changed(charges: int);
+signal time_mode_changed(mode: int);
+signal time_target_selected(target_type: String, target_id: String);
+signal time_action_executed(mode: int, target_type: String, target_id: String);

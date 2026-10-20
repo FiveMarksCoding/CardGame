@@ -21,6 +21,7 @@ CardLib="*uid://3bdneqyjgtag"
 GameState="*uid://btn4v3v6swnjn"
 MapSystem="*uid://ddfodmyhrrikg"
 EventBus="*uid://dpssd7wbsjmdu"
+TimeService="*uid://bivbuk8wxewci"
 
 [display]
 

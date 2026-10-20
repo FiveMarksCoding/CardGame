@@ -18,9 +18,12 @@ signal player_block_changed(new_block: int);
 signal turn_started(turn_count: int);
 # data
 var battle_type: String="normal";
-var turn_history: Dictionary={};
+# 快照管理器
+var snapshot_manager: BattleSnapshotManager=BattleSnapshotManager.new();
 
 func _ready ():
+	EventBus.time_action_executed.connect(_on_time_action_executed);
+	
 	if MapSystem.instance && (MapSystem.instance.current_node_id != ""):
 		var node=MapSystem.instance.current_map_data.get_node(MapSystem.instance.current_node_id);
 		if node:
@@ -105,8 +108,12 @@ func start_player_turn ():
 		enemy.generate_new_intents();
 	logic.start_player_turn();
 	add_neutral_energy(3);
-	_save_turn_snapshot();
 	await draw_hands();
+	
+	# 使用 Manager 存快照
+	snapshot_manager.save_snapshot(logic,energy_pool,deck,enemies);
+	
+	TimeService.used_targets_this_turn.clear() # 重置本回合使用记录
 	turn_started.emit(logic.turn_count);
 
 func end_player_turn ():
@@ -218,10 +225,12 @@ func _on_reward_completed ():
 	print("_on_reward_completed 被调用");
 	EventBus.battle_ended.emit(1);
 	_cleanup_battle();
+
 func _cleanup_battle ():
 	get_tree().create_timer(0.1).timeout.connect(func():
 		get_parent().queue_free();
 	);
+
 func resolve_card (card_data: CardData, target: Enemy) -> void:
 	var result=CardResolver.resolve(card_data,target,logic);
 	if result["damage"]>0:
@@ -229,3 +238,11 @@ func resolve_card (card_data: CardData, target: Enemy) -> void:
 	if result["block"]>0:
 		player_block_changed.emit(logic.player_block);
 		print("获得 %d 点格挡" % result["block"]);
+
+# 时间操作转发
+func _on_time_action_executed(mode: int, target_type: String, target_id: String):
+	snapshot_manager.execute_time_action(
+		mode,target_type,target_id,logic,enemies,
+		func(hp,max_hp): player_health_changed.emit(hp,max_hp),
+		func(enemy): pass
+	);

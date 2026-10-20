@@ -4,11 +4,13 @@ var player_deck: Array[CardData]=[];
 var gold: int=0;
 var relics: Array=[];
 var current_layer: int=1;
+var time_charges: int=0;
 
 func _ready():
 	randomize();
 	player_deck=create_new_deck();
 	gold=99;
+	time_charges=99;
 	print("GameState 已加载，卡组共 %d 张" % player_deck.size());
 func create_new_deck() -> Array:
 	# 初始牌组：只写 ID，属性从 CardLib 读

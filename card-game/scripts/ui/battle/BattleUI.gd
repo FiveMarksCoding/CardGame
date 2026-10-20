@@ -31,27 +31,29 @@ func _connect_signals ():
 	_battle_manager.player_block_changed.connect(_on_block_changed)
 	_battle_manager.turn_started.connect(_on_turn_started)
 func _build_ui():
-	# 1. 背景面板（左下角玩家信息）
+	# 背景
 	var panel = Panel.new()
-	panel.size = Vector2(180, 70)
+	panel.size = Vector2(380,170)
 	panel.position = Vector2(20, 400)
 	var style = StyleBoxFlat.new()
 	style.bg_color = Color(0, 0, 0, 0.6)
 	style.set_corner_radius_all(8)
 	panel.add_theme_stylebox_override("panel", style)
 	add_child(panel)
-	# 2. 生命值文本
+	# hp
 	_hp_label = Label.new()
 	_hp_label.position = Vector2(15, 15)
-	_hp_label.size = Vector2(150, 30)
+	_hp_label.size = Vector2(300,60)
 	_hp_label.add_theme_font_size_override("font_size", 22)
 	_hp_label.add_theme_color_override("font_color", Color.RED)
 	_hp_label.text = "100/100"
+	_hp_label.mouse_filter = Control.MOUSE_FILTER_STOP;
+	_hp_label.gui_input.connect(_on_hp_label_gui_input);
 	panel.add_child(_hp_label)
 	# 3. 格挡值文本
 	_block_label = Label.new()
-	_block_label.position = Vector2(15, 45)
-	_block_label.size = Vector2(150, 20)
+	_block_label.position = Vector2(85, 45)
+	_block_label.size = Vector2(300,60)
 	_block_label.add_theme_font_size_override("font_size", 16)
 	_block_label.add_theme_color_override("font_color", Color.CYAN)
 	_block_label.text = "🛡 0"
@@ -98,3 +100,8 @@ func _on_end_turn_pressed():
 		_end_turn_btn.disabled=1;
 	if _battle_manager:
 		_battle_manager.end_player_turn()
+
+func _on_hp_label_gui_input(event: InputEvent):
+	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+		# 只有在时间模式下点击才有效
+		EventBus.time_target_selected.emit("hp", "player")

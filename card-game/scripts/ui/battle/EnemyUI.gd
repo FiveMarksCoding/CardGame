@@ -9,7 +9,6 @@ var intent_container: Control=null;
 var name_label: Label=null;
 var intent_items: Array[Control]=[];
 # 信号
-signal intent_selected(enemy: Enemy,index: int);
 signal died(enemy: Enemy);
 # 意图组缓存
 var _cached_intents: Array=[];
@@ -121,7 +120,7 @@ func _on_intent_hovered (index: int, entered: bool):
 
 func _on_intent_clicked(event: InputEvent, index: int):
 	if event is InputEventMouseButton && event.pressed && event.button_index==MOUSE_BUTTON_LEFT:
-		intent_selected.emit(self,index);
+		EventBus.time_target_selected.emit("intent", data.id);
 
 func _on_mouse_entered():
 	modulate=Color(1.1, 1.1, 1.1);
@@ -173,7 +172,8 @@ func remove_intent(index: int):
 # 用当前缓存更新 UI
 func _update_intents_display():
 	for child in intent_container.get_children():
-		child.queue_free()
+		child.visible=false;
+		child.queue_free() 
 	intent_items.clear()
 	var y_offset = 0
 	for i in range(_cached_intents.size()):
